@@ -1,0 +1,16 @@
+
+backend/invoice_tracking/
+backend/.env
+backend/.postgres.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+*.log
