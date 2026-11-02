@@ -35,11 +35,7 @@ class Order(Base):
             name="ck_orders_positive_amount",
         ),
         CheckConstraint(
-            """
-            (order_type = 'PO' AND budget_id IS NOT NULL)
-            OR
-            (order_type = 'SO' AND budget_id IS NULL)
-            """,
+            "budget_id IS NOT NULL",
             name="ck_orders_budget_type",
         ),
     )
@@ -59,16 +55,22 @@ class Order(Base):
     budget_id = Column(
         Integer,
         ForeignKey("budgets.id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 
     financial_year = Column(String(9), nullable=False)
     order_date = Column(Date, nullable=False)
+    order_period = Column(String(100), nullable=True)
+    location = Column(String(200), nullable=True)
 
     amount = Column(Numeric(18, 2), nullable=False)
 
     description = Column(Text, nullable=True)
+
+    # Uploaded document paths
+    order_file_path = Column(String(500), nullable=True)
+    approval_file_path = Column(String(500), nullable=True)
 
     status = Column(
         String(20),
@@ -91,3 +93,6 @@ class Order(Base):
 
     party = relationship("Party")
     budget = relationship("Budget")
+
+    # Invoices linked to this order
+    invoices = relationship("Invoice", back_populates="order")

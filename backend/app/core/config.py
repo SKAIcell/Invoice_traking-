@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     app_name: str = "Invoice Tracking"
     app_version: str = "1.0.0"
     database_url: str
+    secret_key: str
 
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",

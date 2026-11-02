@@ -1,47 +1,35 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.core.security import require_roles
 from app.db.session import get_db
 from app.models.budget import Budget
-from app.schemas.budget import (
-    BudgetCreate,
-    BudgetUpdate,
-    BudgetResponse,
-)
+from app.schemas.budget import BudgetCreate, BudgetUpdate, BudgetResponse
 
-router = APIRouter(
-    prefix="/budgets",
-    tags=["Budgets"],
-)
+router = APIRouter(prefix="/budgets", tags=["Budgets"])
 
 
-@router.post(
-    "",
-    response_model=BudgetResponse,
-    status_code=201,
-)
+@router.post("", response_model=BudgetResponse, status_code=201)
 def create_budget(
     payload: BudgetCreate,
     db: Session = Depends(get_db),
+    current_user=Depends(require_roles("ADMIN", "ACCOUNTS")),
 ):
-    existing = (
-        db.query(Budget)
-        .filter(
-            Budget.name == payload.name,
-            Budget.financial_year == payload.financial_year,
-        )
-        .first()
-    )
+    existing = db.query(Budget).filter(
+        Budget.name == payload.name,
+        Budget.financial_year == payload.financial_year,
+        Budget.budget_type == payload.budget_type,
+    ).first()
 
     if existing:
         raise HTTPException(
             status_code=409,
-            detail="Budget already exists for this FY",
+            detail="Budget already exists for this financial year and budget type.",
         )
 
     budget = Budget(**payload.model_dump())
-
     db.add(budget)
 
     try:
@@ -51,91 +39,85 @@ def create_budget(
         db.rollback()
         raise HTTPException(
             status_code=409,
-            detail="Budget violates a database constraint",
+            detail="Budget violates a database constraint.",
         )
 
     return budget
 
 
-@router.get(
-    "",
-    response_model=list[BudgetResponse],
-)
+@router.get("", response_model=list[BudgetResponse])
 def list_budgets(
     financial_year: str | None = None,
+    budget_type: str | None = None,
     db: Session = Depends(get_db),
+    current_user=Depends(require_roles("ADMIN", "ACCOUNTS")),
 ):
     query = db.query(Budget)
 
     if financial_year:
-        query = query.filter(
-            Budget.financial_year == financial_year
-        )
+        query = query.filter(Budget.financial_year == financial_year)
 
-    return query.order_by(Budget.id.desc()).all()
+    if budget_type:
+        budget_type = budget_type.upper()
+
+        if budget_type not in ("OPEX", "CAPEX"):
+            raise HTTPException(
+                status_code=422,
+                detail="Budget type must be OPEX or CAPEX.",
+            )
+
+        query = query.filter(Budget.budget_type == budget_type)
+
+    return query.order_by(
+        Budget.financial_year.desc(),
+        Budget.id.desc(),
+    ).all()
 
 
-@router.get(
-    "/{budget_id}",
-    response_model=BudgetResponse,
-)
+@router.get("/{budget_id}", response_model=BudgetResponse)
 def get_budget(
     budget_id: int,
     db: Session = Depends(get_db),
+    current_user=Depends(require_roles("ADMIN", "ACCOUNTS")),
 ):
     budget = db.get(Budget, budget_id)
 
     if not budget:
-        raise HTTPException(
-            status_code=404,
-            detail="Budget not found",
-        )
+        raise HTTPException(status_code=404, detail="Budget not found.")
 
     return budget
 
 
-@router.patch(
-    "/{budget_id}",
-    response_model=BudgetResponse,
-)
+@router.patch("/{budget_id}", response_model=BudgetResponse)
 def update_budget(
     budget_id: int,
     payload: BudgetUpdate,
     db: Session = Depends(get_db),
+    current_user=Depends(require_roles("ADMIN", "ACCOUNTS")),
 ):
     budget = db.get(Budget, budget_id)
 
     if not budget:
-        raise HTTPException(
-            status_code=404,
-            detail="Budget not found",
-        )
+        raise HTTPException(status_code=404, detail="Budget not found.")
 
     changes = payload.model_dump(exclude_unset=True)
 
     if not changes:
-        raise HTTPException(
-            status_code=400,
-            detail="No fields provided",
-        )
+        raise HTTPException(status_code=400, detail="No fields provided.")
 
     if any(value is None for value in changes.values()):
         raise HTTPException(
             status_code=422,
-            detail="Budget amounts cannot be null",
+            detail="Budget amounts cannot be null.",
         )
 
-    planned = changes.get(
-        "planned_amount", budget.planned_amount
-    )
-    approved = changes.get(
-        "approved_amount", budget.approved_amount
-    )
+    planned = changes.get("planned_amount", budget.planned_amount)
+    approved = changes.get("approved_amount", budget.approved_amount)
 
     if approved > planned:
         raise HTTPException(
             status_code=422,
-            detail="Approved budget exceeds planned budget",
+            detail="Approved amount cannot exceed planned amount.",
         )
 
     for field, value in changes.items():
@@ -148,7 +130,7 @@ def update_budget(
         db.rollback()
         raise HTTPException(
             status_code=409,
-            detail="Budget update violates a database constraint",
+            detail="Budget update violates a database constraint.",
         )
 
     return budget

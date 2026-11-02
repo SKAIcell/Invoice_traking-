@@ -1,0 +1,89 @@
+
+:root {
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #243247;
+  background: #e9eef5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+
+  --color-navy: #172b4d;
+  --color-navy-light: #243e64;
+  --color-page: #e9eef5;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f6fa;
+  --color-border: #d7e0eb;
+  --color-text: #243247;
+  --color-text-muted: #68788e;
+  --color-primary: #315f96;
+  --color-primary-hover: #244a78;
+  --color-focus: #8ab8f0;
+  --color-success: #24734d;
+  --color-warning: #946516;
+  --color-danger: #b33b42;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--color-page);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-page);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  color: var(--color-text);
+}
+
+::selection {
+  color: #172b4d;
+  background: #d3e4f8;
+}
+
+#root {
+  min-height: 100vh;
+}

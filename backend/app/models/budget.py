@@ -19,10 +19,11 @@ class Budget(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "financial_year", "name",
-            name="uq_budget_fy_name",
-        ),
-        CheckConstraint(
+    "financial_year",
+    "name",
+    "budget_type",
+    name="uq_budget_fy_name_type",
+),CheckConstraint(
             "planned_amount >= 0",
             name="ck_budget_planned_positive",
         ),
@@ -35,34 +36,45 @@ class Budget(Base):
             name="ck_budget_approved_limit",
         ),
         CheckConstraint(
-            "financial_year ~ '^[0-9]{4}-[0-9]{4}$'",
+            "REGEXP_LIKE(financial_year, '^[0-9]{4}-[0-9]{4}$')",
             name="ck_budget_fy_format",
         ),
         CheckConstraint(
-            "CAST(right(financial_year, 4) AS INTEGER) = "
-            "CAST(left(financial_year, 4) AS INTEGER) + 1",
+            "CAST(SUBSTRING(financial_year, 6, 4) AS UNSIGNED) = "
+            "CAST(SUBSTRING(financial_year, 1, 4) AS UNSIGNED) + 1",
             name="ck_budget_fy_sequence",
         ),
         CheckConstraint(
             "length(trim(name)) > 0",
             name="ck_budget_name",
         ),
+        CheckConstraint(
+            "budget_type IN ('OPEX', 'CAPEX')",
+            name="ck_budget_type_valid",
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    name: Mapped[str] = mapped_column(
-        String(200), nullable=False
-    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
     financial_year: Mapped[str] = mapped_column(
-        String(9), nullable=False, index=True
+        String(9),
+        nullable=False,
+        index=True,
+    )
+
+    budget_type: Mapped[str] = mapped_column(
+        String(5),
+        nullable=False,
     )
 
     planned_amount: Mapped[Decimal] = mapped_column(
-        Numeric(18, 2), nullable=False
+        Numeric(18, 2),
+        nullable=False,
     )
     approved_amount: Mapped[Decimal] = mapped_column(
-        Numeric(18, 2), nullable=False
+        Numeric(18, 2),
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(

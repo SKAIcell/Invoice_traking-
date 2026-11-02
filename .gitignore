@@ -1,16 +1,24 @@
-
+# Backend local files and environment
 backend/invoice_tracking/
 backend/.env
 backend/.postgres.env
+backend/app/uploads/
+
+# Python
 __pycache__/
 *.pyc
 .venv/
 venv/
-__pycache__/
-*.pyc
+
+# Environment variables
 .env
 .env.*
 !.env.example
+
+# Frontend dependencies and build output
 node_modules/
 dist/
+*.tsbuildinfo
+
+# Logs
 *.log

@@ -1,0 +1,798 @@
+/* =========================================
+   VENDOR MANAGEMENT
+   Skipper Limited · Finance Operations
+   ========================================= */
+
+.vendors-page {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 8px 4px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  color: #1c2d43;
+  box-sizing: border-box;
+}
+
+/* Page header */
+
+.vendors-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 2px 0;
+}
+
+.vendors-eyebrow {
+  margin: 0 0 10px;
+  color: #718096;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  line-height: 1.4;
+}
+
+.vendors-page-header h1 {
+  margin: 0;
+  color: #172b4d;
+  font-size: clamp(25px, 2vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.7px;
+  line-height: 1.3;
+}
+
+.vendors-subtitle {
+  margin: 10px 0 0;
+  color: #748197;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.vendors-refresh-button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 17px;
+  border: 1px solid #d7e0eb;
+  border-radius: 7px;
+  background: #fff;
+  color: #304967;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.vendors-refresh-button:hover {
+  border-color: #9db3d0;
+  background: #f6f9fd;
+}
+
+/* Summary cards */
+
+.vendors-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.vendors-summary-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 145px;
+  padding: 23px 25px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  box-sizing: border-box;
+  box-shadow: 0 2px 7px rgb(27 49 78 / 3%);
+}
+
+.vendors-summary-label {
+  color: #6b7b91;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.vendors-summary-card strong {
+  color: #172b4d;
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.vendors-summary-note {
+  margin-top: auto;
+  color: #8995a7;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Vendor register container */
+
+.vendors-register {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e0e7ef;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(27 49 78 / 3%);
+}
+
+.vendors-register-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px 28px;
+  border-bottom: 1px solid #e9eef4;
+}
+
+.vendors-register-heading h2 {
+  margin: 0;
+  color: #1b304c;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.vendors-register-heading p {
+  margin: 7px 0 0;
+  color: #7a879a;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.vendors-record-count {
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border: 1px solid #e0e7f0;
+  border-radius: 6px;
+  background: #f7f9fc;
+  color: #4b607b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* Search and filters */
+
+.vendors-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 19px 28px;
+  border-bottom: 1px solid #e9eef4;
+  background: #fbfcfe;
+}
+
+.vendors-search {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 11px;
+  min-width: 0;
+  min-height: 43px;
+  padding: 0 14px;
+  border: 1px solid #d9e2ed;
+  border-radius: 7px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.vendors-search > span {
+  flex-shrink: 0;
+  color: #8291a6;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.vendors-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #263950;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.vendors-search input::placeholder {
+  color: #9aa5b5;
+}
+
+.vendors-search:focus-within {
+  border-color: #7d9fc9;
+  box-shadow: 0 0 0 3px rgb(66 113 174 / 9%);
+}
+
+.vendors-toolbar select {
+  flex-shrink: 0;
+  min-width: 160px;
+  min-height: 43px;
+  padding: 0 34px 0 13px;
+  border: 1px solid #d9e2ed;
+  border-radius: 7px;
+  background-color: #fff;
+  color: #394c65;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Vendor table */
+
+.vendors-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.vendors-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.vendors-table thead {
+  background: #f7f9fc;
+}
+
+.vendors-table th {
+  padding: 15px 22px;
+  border-bottom: 1px solid #e5ebf2;
+  color: #66768c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  line-height: 1.5;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vendors-table td {
+  padding: 19px 22px;
+  border-bottom: 1px solid #edf1f6;
+  color: #4b5d74;
+  font-size: 12px;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
+.vendors-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.vendors-table tbody tr {
+  transition: background 140ms ease;
+}
+
+.vendors-table tbody tr:hover {
+  background: #f9fbfe;
+}
+
+/* Vendor identity */
+
+.vendor-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 190px;
+}
+
+.vendor-avatar {
+  display: grid;
+  flex: 0 0 39px;
+  width: 39px;
+  height: 39px;
+  place-items: center;
+  border: 1px solid #dce6f3;
+  border-radius: 9px;
+  background: #eff4fb;
+  color: #315b8c;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.vendor-name-cell > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.vendor-name-cell strong {
+  color: #273b55;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.vendor-name-cell > div > span {
+  color: #8b97a8;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Vendor code */
+
+.vendor-code {
+  display: inline-block;
+  padding: 6px 9px;
+  border: 1px solid #e0e7f0;
+  border-radius: 5px;
+  background: #f7f9fc;
+  color: #455b77;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* Contact details */
+
+.vendor-contact-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 170px;
+}
+
+.vendor-contact-cell span {
+  color: #56677e;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.vendor-address {
+  min-width: 150px;
+  max-width: 260px;
+  color: #69788d;
+  line-height: 1.8 !important;
+  overflow-wrap: anywhere;
+}
+
+/* Account status */
+
+.vendor-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.vendor-status-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.vendor-status.is-active {
+  background: #eaf6ee;
+  color: #287749;
+}
+
+.vendor-status.is-inactive {
+  background: #f0f2f5;
+  color: #697688;
+}
+
+/* Loading, empty and error states */
+
+.vendors-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 190px;
+  padding: 36px 24px;
+  color: #7b899d;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.vendors-state strong {
+  color: #2a3e58;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.vendors-state p {
+  max-width: 420px;
+  margin: 0;
+}
+
+.vendors-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 28px;
+  background: #fff7f6;
+  color: #a2342d;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.vendors-error p {
+  margin: 0;
+}
+
+.vendors-error button {
+  flex-shrink: 0;
+  padding: 8px 13px;
+  border: 1px solid #e7b9b5;
+  border-radius: 6px;
+  background: #fff;
+  color: #a2342d;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vendors-error button:hover {
+  background: #fff0ee;
+}
+
+/* Register footer */
+
+.vendors-register-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 28px;
+  border-top: 1px solid #e9eef4;
+  background: #fbfcfe;
+  color: #8793a5;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Responsive layouts */
+
+@media (min-width: 1400px) {
+  .vendors-page {
+    gap: 30px;
+  }
+
+  .vendors-summary-card {
+    min-height: 155px;
+    padding: 26px 28px;
+  }
+
+  .vendors-table th {
+    padding-right: 25px;
+    padding-left: 25px;
+  }
+
+  .vendors-table td {
+    padding: 21px 25px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .vendors-page {
+    gap: 22px;
+  }
+
+  .vendors-summary-grid {
+    gap: 14px;
+  }
+
+  .vendors-summary-card {
+    padding: 20px;
+  }
+
+  .vendors-register-heading,
+  .vendors-toolbar {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .vendors-table th,
+  .vendors-table td {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .vendors-page {
+    gap: 20px;
+    padding: 4px 0 20px;
+  }
+
+  .vendors-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .vendors-page-header h1 {
+    font-size: 25px;
+  }
+
+  .vendors-subtitle {
+    max-width: 420px;
+    font-size: 13px;
+  }
+
+  .vendors-refresh-button {
+    min-height: 38px;
+  }
+
+  .vendors-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .vendors-summary-card {
+    min-height: auto;
+    gap: 8px;
+    padding: 17px 19px;
+  }
+
+  .vendors-summary-card strong {
+    font-size: 25px;
+  }
+
+  .vendors-summary-note {
+    margin-top: 0;
+  }
+
+  .vendors-register-heading {
+    align-items: flex-start;
+    padding: 19px 17px;
+  }
+
+  .vendors-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 15px 17px;
+  }
+
+  .vendors-toolbar select {
+    width: 100%;
+  }
+
+  .vendors-table {
+    min-width: 800px;
+  }
+
+  .vendors-table th,
+  .vendors-table td {
+    padding: 15px 16px;
+  }
+
+  .vendors-register-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+    padding: 14px 17px;
+  }
+
+  .vendors-error {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 18px;
+  }
+}
+
+/* =========================================
+   VENDOR PAGE — VISUAL REFINEMENTS
+   ========================================= */
+
+/* More balanced page spacing */
+.vendors-page {
+  gap: 24px;
+}
+
+/* Refined page heading */
+.vendors-page-header h1 {
+  letter-spacing: -0.9px;
+}
+
+.vendors-eyebrow {
+  color: #526b8b;
+}
+
+/* Refresh button */
+.vendors-refresh-button {
+  gap: 8px;
+  box-shadow: 0 2px 5px rgb(27 49 78 / 4%);
+}
+
+.vendors-refresh-button:active {
+  transform: translateY(1px);
+}
+
+/* Summary cards */
+.vendors-summary-card {
+  min-height: 150px;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgb(27 49 78 / 4%);
+  transition: transform 180ms ease, box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.vendors-summary-card:hover {
+  transform: translateY(-2px);
+  border-color: #d2deed;
+  box-shadow: 0 7px 18px rgb(27 49 78 / 7%);
+}
+
+.vendors-summary-card strong {
+  font-size: 34px;
+}
+
+/* Register panel */
+.vendors-register {
+  border-color: #dce5ef;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgb(27 49 78 / 4%);
+}
+
+/* Register heading */
+.vendors-register-heading {
+  padding-top: 23px;
+  padding-bottom: 23px;
+}
+
+.vendors-register-heading h2 {
+  font-size: 18px;
+  letter-spacing: -0.3px;
+}
+
+/* Search toolbar */
+.vendors-toolbar {
+  background: #f8fafd;
+}
+
+.vendors-search,
+.vendors-toolbar select {
+  border-color: #d5dfeb;
+  border-radius: 8px;
+}
+
+.vendors-toolbar select:focus {
+  outline: none;
+  border-color: #7d9fc9;
+  box-shadow: 0 0 0 3px rgb(66 113 174 / 9%);
+}
+
+/* Table refinement */
+.vendors-table {
+  border-spacing: 0;
+}
+
+.vendors-table thead {
+  background: #f2f5fa;
+}
+
+.vendors-table th {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  color: #52647c;
+  font-size: 10px;
+  letter-spacing: 0.9px;
+}
+
+.vendors-table td {
+  padding-top: 21px;
+  padding-bottom: 21px;
+}
+
+.vendors-table tbody tr:hover {
+  background: #f5f8fc;
+}
+
+/* Vendor name */
+.vendor-name-cell {
+  gap: 14px;
+}
+
+.vendor-avatar {
+  border-radius: 10px;
+  background: linear-gradient(145deg, #edf3fb, #e3ecf8);
+  color: #244f83;
+  box-shadow: inset 0 0 0 1px rgb(49 91 140 / 4%);
+}
+
+.vendor-name-cell strong {
+  color: #203650;
+  font-size: 13px;
+}
+
+/* Vendor code */
+.vendor-code {
+  background: #f2f6fb;
+  border-color: #dce5f0;
+  color: #365578;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+/* Contact details */
+.vendor-contact-cell {
+  gap: 6px;
+}
+
+.vendor-contact-cell span:first-child {
+  color: #344c68;
+  font-weight: 500;
+}
+
+.vendor-contact-cell span:last-child {
+  color: #8190a4;
+  font-size: 11px;
+}
+
+/* Status labels */
+.vendor-status {
+  padding: 7px 12px;
+  border: 1px solid transparent;
+}
+
+.vendor-status.is-active {
+  border-color: #d5eadc;
+  background: #edf7f0;
+  color: #287749;
+}
+
+.vendor-status.is-inactive {
+  border-color: #e2e6eb;
+  background: #f4f5f7;
+  color: #697688;
+}
+
+/* Footer */
+.vendors-register-footer {
+  background: #f8fafd;
+  color: #78879b;
+}
+
+/* Smooth focus visibility */
+.vendors-page button:focus-visible,
+.vendors-page input:focus-visible,
+.vendors-page select:focus-visible {
+  outline: 3px solid rgb(39 91 151 / 18%);
+  outline-offset: 2px;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .vendors-page *,
+  .vendors-page *::before,
+  .vendors-page *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

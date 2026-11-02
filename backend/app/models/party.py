@@ -8,7 +8,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -18,7 +18,8 @@ class Party(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "party_type", "code",
+            "party_type",
+            "code",
             name="uq_party_type_code",
         ),
         CheckConstraint(
@@ -38,13 +39,20 @@ class Party(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     party_type: Mapped[str] = mapped_column(
-        String(20), nullable=False
+        String(20),
+        nullable=False,
     )
+
     code: Mapped[str] = mapped_column(
-        String(50), nullable=False, index=True
+        String(50),
+        nullable=False,
+        index=True,
     )
+
     name: Mapped[str] = mapped_column(
-        String(200), nullable=False, index=True
+        String(200),
+        nullable=False,
+        index=True,
     )
 
     email: Mapped[str | None] = mapped_column(String(254))
@@ -52,7 +60,9 @@ class Party(Base):
     address: Mapped[str | None] = mapped_column(String(500))
 
     is_active: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default="true"
+        Boolean,
+        nullable=False,
+        server_default="1",
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -60,3 +70,6 @@ class Party(Base):
         nullable=False,
         server_default=func.now(),
     )
+
+    # Invoices associated with this vendor or customer
+    invoices = relationship("Invoice", back_populates="party")

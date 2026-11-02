@@ -1,0 +1,277 @@
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #e9eef5;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  display: flex;
+  width: 252px;
+  height: 100vh;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 26px 18px 18px;
+  border-right: 1px solid #243b59;
+  background: #172b4d;
+  color: #edf3fa;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 7px 28px;
+  border-bottom: 1px solid #344967;
+}
+
+.brand h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.brand p {
+  margin: 4px 0 0;
+  color: #b6c5d8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+
+.company-logo {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #425977;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.company-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 3px;
+}
+
+
+.workspace-label {
+  margin: 28px 10px 12px;
+  color: #9fb2ca;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 1.3px;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nav-item {
+  display: flex;
+  min-height: 43px;
+  align-items: center;
+  gap: 11px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #c2cede;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: none;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  border-color: #3b5272;
+  color: #ffffff;
+  background: #243e60;
+}
+
+.nav-item.active {
+  border-color: #527ba8;
+  color: #ffffff;
+  background: #315982;
+  box-shadow: inset 3px 0 0 #a9d2ff;
+  font-weight: 700;
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid #a9d2ff;
+  outline-offset: 2px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 18px 9px 4px;
+  border-top: 1px solid #344967;
+  color: #a8b8cc;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* Main content */
+.main-content {
+  display: flex;
+  min-width: 0;
+  min-height: 100vh;
+  flex: 1;
+  flex-direction: column;
+  margin-left: 252px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  min-height: 70px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 34px;
+  border-bottom: 1px solid #d7e0eb;
+  background: rgb(250 252 255 / 96%);
+  backdrop-filter: blur(10px);
+}
+
+.topbar > div {
+  min-width: 0;
+}
+
+.topbar h2,
+.topbar h3 {
+  margin: 0;
+  color: #233a53;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.topbar p {
+  margin: 4px 0 0;
+  color: #718198;
+  font-size: 11px;
+}
+
+.topbar button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid #cbd7e5;
+  border-radius: 6px;
+  color: #344d68;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.topbar button:hover {
+  border-color: #9eb4ce;
+  background: #edf3fa;
+}
+
+/* Page area */
+.page-content {
+  width: 100%;
+  max-width: 1600px;
+  flex: 1;
+  margin: 0 auto;
+  padding: 32px 34px 24px;
+}
+
+/* Medium screens */
+@media (max-width: 1000px) {
+  .sidebar {
+    width: 220px;
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+
+  .main-content {
+    margin-left: 220px;
+  }
+
+  .topbar {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .page-content {
+    padding: 26px 24px 22px;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 700px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    padding: 15px;
+    border-right: 0;
+    border-bottom: 1px solid #243b59;
+  }
+
+  .brand {
+    padding-bottom: 15px;
+  }
+
+  .workspace-label {
+    margin-top: 16px;
+  }
+
+  .navigation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nav-item {
+    min-width: 0;
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  .sidebar-footer {
+    margin-top: 15px;
+  }
+
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .main-content {
+    min-height: auto;
+    margin-left: 0;
+  }
+
+  .topbar {
+    position: static;
+    min-height: 60px;
+    padding: 12px 16px;
+  }
+
+  .page-content {
+    padding: 22px 16px;
+  }
+}

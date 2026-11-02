@@ -1,3 +1,4 @@
+from app.core.security import require_roles
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -15,11 +16,11 @@ router = APIRouter(
     tags=["Vendors and Customers"],
 )
 
-
 @router.post(
     "",
     response_model=PartyResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_roles("ADMIN", "ACCOUNTS"))],
 )
 def create_party(
     payload: PartyCreate,
