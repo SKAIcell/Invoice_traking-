@@ -194,6 +194,8 @@ function OrderInvoicesPage({
   const [savingDateId, setSavingDateId] = useState<number | null>(null);
 
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
+const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 const [bulkImportFile, setBulkImportFile] = useState<File | null>(null);
 const [bulkImportPreview, setBulkImportPreview] =
   useState<BulkImportPreview | null>(null);
@@ -208,6 +210,14 @@ const [confirmingImport, setConfirmingImport] = useState(false);
     null,
   );
   const [uploadedDocumentIds, setUploadedDocumentIds] = useState<number[]>([]);
+  // Keep the existing approval-document functionality available.
+  void uploadingApproval;
+  void downloadingApproval;
+  void hasApproval;
+  void handleApprovalUpload;
+  void handleApprovalDownload;
+  void handleFileChange;
+
 
   const totalInvoiceAmount = invoices.reduce(
     (total, invoice) => total + Number(invoice.amount || 0),
@@ -260,6 +270,62 @@ function handleBulkImportFileChange(
     setError("Please select an Excel .xlsx or .xlsm file.");
     setBulkImportFile(null);
     event.target.value = "";
+  }
+}
+
+async function handleDownloadTemplate() {
+  const token = getToken();
+
+  if (!token) {
+    setError("Your session has expired. Please sign in again.");
+    return;
+  }
+
+  try {
+    setDownloadingTemplate(true);
+    setError("");
+    setSuccess("");
+
+    const response = await fetch(
+      `/api/invoice-approvals/template?order_id=${order.id}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const data = await readResponse(response);
+
+      throw new Error(
+        getErrorMessage(data as ApiError, "Unable to download invoice template."),
+      );
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = objectUrl;
+    link.download = "Invoice_Bulk_Import_Template.xlsx";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(objectUrl);
+
+    setSuccess("Invoice bulk import template downloaded successfully.");
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Unable to download invoice template.",
+    );
+  } finally {
+    setDownloadingTemplate(false);
   }
 }
 
@@ -326,14 +392,12 @@ async function handleBulkImportConfirm() {
   }
 
   if (bulkImportPreview.invalid_rows > 0) {
-    setError(
-      "Please correct all invalid Excel rows before importing.",
-    );
+    setError("Please correct all invalid Excel rows before submitting.");
     return;
   }
 
   const confirmed = window.confirm(
-    `Import ${bulkImportPreview.valid_rows} invoice(s) for order ${order.order_number}?`,
+    `Submit ${bulkImportPreview.valid_rows} invoice(s) for order ${order.order_number} to IT Head approval?`,
   );
 
   if (!confirmed) return;
@@ -351,18 +415,16 @@ async function handleBulkImportConfirm() {
     setSuccess("");
 
     const body = new FormData();
+    body.append("order_id", String(order.id));
     body.append("file", bulkImportFile);
 
-    const response = await fetch(
-      `/api/orders/${order.id}/invoices/import/confirm`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body,
+    const response = await fetch("/api/invoice-approvals/bulk", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+      body,
+    });
 
     const data = await readResponse(response);
 
@@ -370,31 +432,33 @@ async function handleBulkImportConfirm() {
       throw new Error(
         getErrorMessage(
           data as ApiError,
-          "Unable to import invoices.",
+          "Unable to submit invoices for IT Head approval.",
         ),
       );
     }
 
     const result = data as {
       message?: string;
-      imported_count?: number;
+      approval_request_id?: number;
+      status?: string;
     };
 
     setSuccess(
       result.message ??
-        `${result.imported_count ?? 0} invoice(s) imported successfully.`,
+        "Excel invoice batch submitted for IT Head approval. The invoices will appear in the Invoice Register after approval.",
     );
 
     setBulkImportFile(null);
     setBulkImportPreview(null);
     setShowBulkImport(false);
 
-    await loadInvoices();
+    // Do not reload the official invoice register.
+    // These invoices are pending approval and are not official invoices yet.
   } catch (err) {
     setError(
       err instanceof Error
         ? err.message
-        : "Unable to import invoices.",
+        : "Unable to submit invoices for IT Head approval.",
     );
   } finally {
     setConfirmingImport(false);
@@ -441,7 +505,7 @@ async function handleBulkImportConfirm() {
         ...invoice,
         invoice_type:
           invoice.invoice_type ??
-          (order.order_type === "PO" ? "PURCHASE" : "SALES"),
+          (order.order_type === "PO" ? "PURCHASE" : "SERVICE"),
         financial_year: invoice.financial_year ?? order.financial_year ?? "",
         status: invoice.payment_status ?? invoice.status ?? "UNPAID",
       }));
@@ -1054,24 +1118,61 @@ async function handleBulkImportConfirm() {
       <div>
         <span>Invoice Type</span>
         <strong>
-          {order.order_type === "PO" ? "PURCHASE" : "SALES"}
+          {order.order_type === "PO" ? "PURCHASE" : "SERVICE"}
         </strong>
       </div>
     </div>
 
     <div className="order-bulk-import-instructions">
-      <strong>Excel columns</strong>
+  <div className="order-template-heading">
+    <div>
+      <strong>Excel Import Template</strong>
       <p>
-  Required: Invoice Number, PO/SO Number, Vendor Name,
-  Vendor Code, Invoice Date, Due Date and Amount.
-</p>
-      <p>
-        Optional: Period, Location, Description and Remarks.
-      </p>
-      <p>
-        The PO/SO Number and Vendor Name must match this selected order.
+        Use the standard template to prepare your invoice data.
       </p>
     </div>
+
+    <div className="order-template-actions">
+      <button
+        type="button"
+        className="secondary-button"
+        onClick={() => setShowTemplatePreview(true)}
+        disabled={downloadingTemplate}
+      >
+        Preview Template
+      </button>
+
+      <button
+        type="button"
+        className="primary-button"
+        onClick={() => void handleDownloadTemplate()}
+        disabled={downloadingTemplate}
+      >
+        {downloadingTemplate ? "Downloading..." : "Download Template"}
+      </button>
+    </div>
+  </div>
+
+  <p>
+    <strong>Required:</strong> Invoice Number, Order Number,
+    Vendor Code, Invoice Date, Due Date and Amount.
+  </p>
+
+  <p>
+    <strong>Optional:</strong> Invoice Type, Financial Year,
+    Period, Location, Description and Remarks.
+  </p>
+
+  <p>
+    Order Number and Vendor Code must match the selected order.
+    Vendor Name is not required in the Excel file.
+  </p>
+
+  <p>
+    Dates must use DD-MM-YYYY or YYYY-MM-DD format.
+    Amount must be a positive number with up to two decimal places.
+  </p>
+</div>
 
     <div className="order-bulk-import-file">
       <label htmlFor="order-bulk-import-file">
@@ -1156,9 +1257,9 @@ async function handleBulkImportConfirm() {
   <tr>
     <th>Excel Row</th>
     <th>Invoice Number</th>
-    <th>PO/SO Number</th>
-    <th>Vendor/Customer</th>
-    <th>Vendor/Customer Code</th>
+    <th>Order Number</th>
+    <th>Vendor</th>
+    <th>Vendor Code</th>
     <th>Invoice Date</th>
     <th>Due Date</th>
     <th>Amount</th>
@@ -1237,6 +1338,196 @@ async function handleBulkImportConfirm() {
       </div>
     )}
   </section>
+)}
+
+{showTemplatePreview && (
+  <div
+    className="order-template-modal-overlay"
+    onClick={() => setShowTemplatePreview(false)}
+  >
+    <div
+      className="order-template-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="order-template-modal-title"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="order-template-modal-header">
+        <div>
+          <p className="eyebrow">INVOICE BULK IMPORT</p>
+          <h3 id="order-template-modal-title">
+            Excel Template Preview
+          </h3>
+          <p>
+            Review the exact columns before preparing your invoice file.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => setShowTemplatePreview(false)}
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="order-template-modal-body">
+        <div className="order-template-order-info">
+          <div>
+            <span>Selected Order</span>
+            <strong>{order.order_number}</strong>
+          </div>
+
+          <div>
+            <span>Vendor</span>
+            <strong>
+              {order.party_name || `Party #${order.party_id}`}
+            </strong>
+          </div>
+
+          <div>
+            <span>Invoice Type</span>
+            <strong>
+              {order.order_type === "PO" ? "PURCHASE" : "SERVICE"}
+            </strong>
+          </div>
+        </div>
+
+        <h4>Excel Columns</h4>
+
+        <div className="table-container">
+          <table className="order-template-preview-table">
+            <thead>
+              <tr>
+                <th>Column</th>
+                <th>Field Name</th>
+                <th>Requirement</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {[
+                ["Invoice Type", "Optional"],
+                ["Invoice Number", "Required"],
+                ["Order Number", "Required"],
+                ["Vendor Code", "Required"],
+                ["Financial Year", "Optional"],
+                ["Invoice Date", "Required"],
+                ["Due Date", "Required"],
+                ["Amount", "Required"],
+                ["Period", "Optional"],
+                ["Location", "Optional"],
+                ["Description", "Optional"],
+                ["Remarks", "Optional"],
+              ].map(([field, requirement], index) => (
+                <tr key={field}>
+                  <td>{index + 1}</td>
+                  <td><strong>{field}</strong></td>
+                  <td>
+                    <span
+                      className={
+                        requirement === "Required"
+                          ? "template-required"
+                          : "template-optional"
+                      }
+                    >
+                      {requirement}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Sample Excel Row</h4>
+
+        <div className="table-container">
+          <table className="order-template-sample-table">
+            <thead>
+              <tr>
+                <th>Invoice Type</th>
+                <th>Invoice Number</th>
+                <th>Order Number</th>
+                <th>Vendor Code</th>
+                <th>Financial Year</th>
+                <th>Invoice Date</th>
+                <th>Due Date</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td>
+                  {order.order_type === "PO" ? "PURCHASE" : "SERVICE"}
+                </td>
+                <td>INV-2026-001</td>
+                <td>{order.order_number}</td>
+                <td>YOUR_VENDOR_CODE</td>
+                <td>{order.financial_year || "2026-2027"}</td>
+                <td>12-11-2026</td>
+                <td>12-12-2026</td>
+                <td>1000.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="order-template-notes">
+          <h4>Important Instructions</h4>
+
+          <ul>
+            <li>
+              <strong>Vendor Code:</strong> Enter the actual vendor code
+              from the Vendor Register. It must belong to this order's vendor.
+            </li>
+            <li>
+              <strong>Order Number:</strong> Use the selected order number.
+            </li>
+            <li>
+              <strong>Invoice Type:</strong> PURCHASE or SERVICE.
+              It can be left blank and derived from the order.
+            </li>
+            <li>
+              <strong>Financial Year:</strong> Use YYYY-YYYY format.
+              Leave blank to derive it from Invoice Date.
+            </li>
+            <li>
+              <strong>Dates:</strong> DD-MM-YYYY or YYYY-MM-DD.
+            </li>
+            <li>
+              <strong>Amount:</strong> Must be positive and have
+              no more than two decimal places.
+            </li>
+            <li>
+              Do not rename the Excel column headers.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="order-template-modal-footer">
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => setShowTemplatePreview(false)}
+        >
+          Close Preview
+        </button>
+
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => void handleDownloadTemplate()}
+          disabled={downloadingTemplate}
+        >
+          {downloadingTemplate ? "Downloading..." : "Download Excel Template"}
+        </button>
+      </div>
+    </div>
+  </div>
 )}
 
       {loading ? (

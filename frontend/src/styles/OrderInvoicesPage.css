@@ -1258,3 +1258,195 @@
   }
 }
 
+/* Invoice Excel template preview */
+
+.order-template-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.order-template-heading p {
+  margin: 5px 0 0;
+}
+
+.order-template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.order-template-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(3px);
+}
+
+.order-template-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dce3ed;
+  border-radius: 14px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
+}
+
+.order-template-modal-header,
+.order-template-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5eaf1;
+}
+
+.order-template-modal-header h3 {
+  margin: 4px 0;
+  color: #172b4d;
+}
+
+.order-template-modal-header p {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.order-template-modal-body {
+  padding: 24px;
+  overflow: auto;
+}
+
+.order-template-modal-body h4 {
+  margin: 22px 0 12px;
+  color: #172b4d;
+}
+
+.order-template-order-info {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.order-template-order-info > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: #f5f8fc;
+  border: 1px solid #e3eaf3;
+  border-radius: 8px;
+}
+
+.order-template-order-info span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.order-template-order-info strong {
+  color: #172b4d;
+  overflow-wrap: anywhere;
+}
+
+.order-template-preview-table,
+.order-template-sample-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.order-template-preview-table th,
+.order-template-preview-table td,
+.order-template-sample-table th,
+.order-template-sample-table td {
+  padding: 11px 13px;
+  text-align: left;
+  border-bottom: 1px solid #e5eaf1;
+}
+
+.order-template-preview-table th,
+.order-template-sample-table th {
+  color: #ffffff;
+  background: #17365d;
+  font-weight: 600;
+}
+
+.template-required {
+  display: inline-block;
+  padding: 4px 9px;
+  color: #a32626;
+  background: #fff0f0;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.template-optional {
+  display: inline-block;
+  padding: 4px 9px;
+  color: #475569;
+  background: #eef2f7;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.order-template-notes {
+  margin-top: 22px;
+  padding: 16px 18px;
+  background: #f5f8fc;
+  border: 1px solid #e3eaf3;
+  border-radius: 9px;
+}
+
+.order-template-notes h4 {
+  margin: 0 0 10px;
+}
+
+.order-template-notes ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #475569;
+  line-height: 1.8;
+}
+
+.order-template-modal-footer {
+  justify-content: flex-end;
+  border-top: 1px solid #e5eaf1;
+  border-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .order-template-modal-overlay {
+    padding: 10px;
+  }
+
+  .order-template-order-info {
+    grid-template-columns: 1fr;
+  }
+
+  .order-template-modal-header {
+    align-items: flex-start;
+  }
+
+  .order-template-actions {
+    width: 100%;
+  }
+
+  .order-template-modal-footer {
+    flex-wrap: wrap;
+  }
+}
+

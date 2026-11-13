@@ -76,9 +76,7 @@ def validate_invoice_links(db: Session, payload: InvoiceCreate):
     if party is None:
         raise HTTPException(404, "Vendor/customer not found")
 
-    expected_party_type = (
-        "VENDOR" if payload.invoice_type == "PURCHASE" else "CUSTOMER"
-    )
+    expected_party_type = "VENDOR"
 
     if (party.party_type or "").strip().upper() != expected_party_type:
         raise HTTPException(
@@ -220,10 +218,7 @@ async def preview_invoice_import(
                 f"{expected_order_type} order '{order_number}' not found."
             )
 
-        expected_party_type = (
-            "VENDOR" if invoice_type == "PURCHASE" else "CUSTOMER"
-        )
-
+        expected_party_type = "VENDOR"
         party = (
             db.query(Party)
             .filter(
@@ -307,198 +302,20 @@ async def preview_invoice_import(
 
     return preview
 
-
 @router.post(
     "/import/confirm",
     dependencies=[Depends(require_roles("ADMIN", "ACCOUNTS"))],
 )
 def confirm_invoice_import(
     rows: list[dict] = Body(...),
-    db: Session = Depends(get_db),
 ):
-    if not rows:
-        raise HTTPException(422, "No invoice rows provided")
-
-    if len(rows) > 1000:
-        raise HTTPException(
-            422,
-            "Maximum 1000 invoices can be imported at once",
-        )
-
-    if any(not row.get("is_valid", False) for row in rows):
-        raise HTTPException(
-            422,
-            "Import contains invalid rows. Correct them before confirming.",
-        )
-
-    seen_in_file = set()
-    order_totals = {}
-    invoices_to_create = []
-
-    try:
-        for row in rows:
-            invoice_type = str(row["invoice_type"]).strip().upper()
-            invoice_number = str(row["invoice_number"]).strip()
-            order_number = str(row["order_number"]).strip()
-            vendor_code = str(row["vendor_code"]).strip()
-            financial_year = str(row["financial_year"]).strip()
-
-            if invoice_type not in ("PURCHASE", "SALES"):
-                raise HTTPException(422, "Invalid invoice type")
-
-            expected_order_type = (
-                "PO" if invoice_type == "PURCHASE" else "SO"
-            )
-
-            expected_party_type = (
-                "VENDOR" if invoice_type == "PURCHASE" else "CUSTOMER"
-            )
-
-            order = (
-                db.query(Order)
-                .filter(
-                    Order.order_number == order_number,
-                    Order.order_type == expected_order_type,
-                )
-                .first()
-            )
-
-            if order is None:
-                raise HTTPException(
-                    422,
-                    f"Order '{order_number}' not found",
-                )
-
-            party = (
-                db.query(Party)
-                .filter(
-                    Party.code == vendor_code,
-                    Party.party_type == expected_party_type,
-                )
-                .first()
-            )
-
-            if party is None:
-                raise HTTPException(
-                    422,
-                    f"{expected_party_type} '{vendor_code}' not found",
-                )
-
-            if not party.is_active:
-                raise HTTPException(
-                    422,
-                    f"{expected_party_type} '{vendor_code}' is inactive",
-                )
-
-            amount = Decimal(str(row["amount"]))
-
-            payload = InvoiceCreate(
-                invoice_type=invoice_type,
-                invoice_number=invoice_number,
-                order_id=order.id,
-                party_id=party.id,
-                financial_year=financial_year,
-                invoice_date=row["invoice_date"],
-                due_date=row["due_date"],
-                period=row.get("period"),
-                location=row.get("location"),
-                amount=amount,
-                description=row.get("description"),
-                remarks=row.get("remarks"),
-            )
-
-            order = validate_invoice_links(db, payload)
-
-            duplicate_key = (
-                invoice_type,
-                invoice_number.casefold(),
-                party.id,
-                financial_year if invoice_type == "SALES" else None,
-            )
-
-            if duplicate_key in seen_in_file:
-                raise HTTPException(
-                    409,
-                    f"Duplicate invoice '{invoice_number}' in Excel file",
-                )
-
-            seen_in_file.add(duplicate_key)
-
-            duplicate_query = db.query(Invoice).filter(
-                Invoice.invoice_type == invoice_type,
-                Invoice.invoice_number == invoice_number,
-                Invoice.party_id == party.id,
-            )
-
-            if invoice_type == "SALES":
-                duplicate_query = duplicate_query.filter(
-                    Invoice.financial_year == financial_year
-                )
-
-            if duplicate_query.first():
-                raise HTTPException(
-                    409,
-                    f"Invoice '{invoice_number}' already exists",
-                )
-
-            order_totals[order.id] = (
-                order_totals.get(order.id, Decimal("0.00"))
-                + amount
-            )
-
-            invoices_to_create.append(
-                (payload, order)
-            )
-
-        # Validate combined invoice amounts per order.
-        for order_id, import_total in order_totals.items():
-            order = db.get(Order, order_id)
-
-            validate_order_invoice_total(
-                db,
-                order,
-                import_total,
-            )
-
-        # Create all invoices in one transaction.
-        created_invoices = []
-
-        for payload, order in invoices_to_create:
-            invoice = Invoice(**payload.model_dump())
-            db.add(invoice)
-            created_invoices.append(invoice)
-
-        db.commit()
-
-        for invoice in created_invoices:
-            db.refresh(invoice)
-
-        return {
-            "message": "Invoices imported successfully",
-            "created_count": len(created_invoices),
-            "invoice_ids": [
-                invoice.id for invoice in created_invoices
-            ],
-            "invoice_numbers": [
-                invoice.invoice_number
-                for invoice in created_invoices
-            ],
-        }
-
-    except HTTPException:
-        db.rollback()
-        raise
-
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            409,
-            "Invoice import failed because of a duplicate or data conflict",
-        )
-
-    except Exception:
-        db.rollback()
-        raise
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Direct invoice import is disabled. "
+            "Submit the Excel file through the IT Head approval workflow."
+        ),
+    )
 
 
 @router.post(
@@ -509,95 +326,14 @@ def confirm_invoice_import(
 )
 def create_invoice(
     payload: InvoiceCreate,
-    db: Session = Depends(get_db),
 ):
-    order = validate_invoice_links(db, payload)
-
-    validate_order_invoice_total(
-        db,
-        order,
-        payload.amount,
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "Direct invoice creation is disabled. "
+            "Submit the invoice through the IT Head approval workflow."
+        ),
     )
-
-    query = db.query(Invoice).filter(
-        Invoice.invoice_type == payload.invoice_type,
-        Invoice.invoice_number == payload.invoice_number,
-        Invoice.party_id == payload.party_id,
-    )
-
-    if payload.invoice_type == "SALES":
-        query = query.filter(
-            Invoice.financial_year == payload.financial_year
-        )
-
-    existing = query.first()
-
-    if existing:
-        raise HTTPException(
-            status_code=409,
-            detail=jsonable_encoder({
-                "message": "Duplicate invoice",
-                "invoice": {
-                    "invoice_date": existing.invoice_date,
-                    "invoice_number": existing.invoice_number,
-                    "po_number": (
-                        existing.order.order_number
-                        if existing.order
-                        and existing.order.order_type == "PO"
-                        else None
-                    ),
-                    "entry_date": existing.created_at,
-                    "date_sent_to_accounts": (
-                        existing.date_sent_to_accounts
-                    ),
-                    "amount": existing.amount,
-                },
-            }),
-        )
-
-    invoice = Invoice(**payload.model_dump())
-    db.add(invoice)
-
-    try:
-        db.commit()
-        db.refresh(invoice)
-
-    except IntegrityError:
-        db.rollback()
-
-        existing = (
-            db.query(Invoice)
-            .filter(
-                Invoice.invoice_type == payload.invoice_type,
-                Invoice.invoice_number == payload.invoice_number,
-                Invoice.party_id == payload.party_id,
-            )
-            .first()
-        )
-
-        raise HTTPException(
-            status_code=409,
-            detail=jsonable_encoder({
-                "message": "Duplicate invoice or data conflict",
-                "invoice": {
-                    "invoice_date": existing.invoice_date,
-                    "invoice_number": existing.invoice_number,
-                    "po_number": (
-                        existing.order.order_number
-                        if existing.order
-                        and existing.order.order_type == "PO"
-                        else None
-                    ),
-                    "entry_date": existing.created_at,
-                    "date_sent_to_accounts": (
-                        existing.date_sent_to_accounts
-                    ),
-                    "amount": existing.amount,
-                } if existing else None,
-            }),
-        )
-
-    return invoice
 
 
 @router.get("", response_model=list[InvoiceResponse])

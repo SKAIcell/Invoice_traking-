@@ -1,6 +1,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import "../styles/invoices.css";
+import "../styles/invoice-approvals.css";
 
 type OrderOption = {
   id: number;
@@ -54,8 +55,36 @@ export type InvoiceRegisterRow = {
   payment_status: string;
 };
 
+type ApprovalInvoiceData = {
+  invoice_number?: string;
+  invoice_type?: string;
+  invoice_date?: string;
+  due_date?: string;
+  amount?: string | number;
+  party_id?: number;
+  order_id?: number;
+  financial_year?: string;
+  description?: string | null;
+};
+
+type ApprovalRequest = {
+  id: number;
+  order_id: number;
+  order_number: string;
+  request_type: "MANUAL" | "BULK";
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  invoice_count: number;
+  invoice_data: ApprovalInvoiceData[];
+  requested_by: string;
+  requested_at: string;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  remarks?: string | null;
+  result_invoice_ids: number[];
+};
+
 type InvoiceForm = {
-  invoice_type: "PURCHASE" | "SALES";
+  invoice_type: "PURCHASE" | "SERVICE";
   invoice_number: string;
   order_id: string;
   party_id: string;
@@ -123,6 +152,21 @@ function formatDate(value?: string | null): string {
   return value ? value.slice(0, 10) : "—";
 }
 
+function formatDateTime(value?: string | null): string {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 16).replace("T", " ");
+  }
+
+  return date.toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 function formatCurrency(value: string | number | null | undefined): string {
   return Number(value ?? 0).toLocaleString("en-IN", {
     style: "currency",
@@ -157,12 +201,31 @@ export default function InvoicesPage({
   const [registerRows, setRegisterRows] = useState<InvoiceRegisterRow[]>([]);
   const [orders, setOrders] = useState<OrderOption[]>([]);
   const [, setLoading] = useState(true);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+  if (!success) return;
+
+  const timer = window.setTimeout(() => {
+    setSuccess("");
+  }, 6000);
+
+  return () => window.clearTimeout(timer);
+}, [success]);
+
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<
     "ALL" | "OPEX" | "CAPEX"
   >("ALL");
+
+  // Approval request state
+  const [approvalRequests, setApprovalRequests] = useState<
+    ApprovalRequest[]
+  >([]);
+  const [approvalLoading, setApprovalLoading] = useState(true);
+  const [approvalSearch, setApprovalSearch] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -274,10 +337,71 @@ export default function InvoicesPage({
     }
   }
 
+  async function loadApprovalRequests() {
+    setApprovalLoading(true);
+
+    try {
+      const token = sessionStorage.getItem("access_token");
+
+      const response = await fetch("/api/invoice-approvals/requests", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+
+        throw new Error(
+          getErrorMessage(
+            data,
+            `Unable to load approval requests (${response.status}).`,
+          ),
+        );
+      }
+
+      const data: ApprovalRequest[] = await response.json();
+
+      setApprovalRequests(
+        Array.isArray(data)
+          ? data.map((request) => ({
+              ...request,
+              invoice_data: Array.isArray(request.invoice_data)
+                ? request.invoice_data
+                : [],
+              result_invoice_ids: Array.isArray(request.result_invoice_ids)
+                ? request.result_invoice_ids
+                : [],
+            }))
+          : [],
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load invoice approval requests.",
+      );
+    } finally {
+      setApprovalLoading(false);
+    }
+  }
+
+  async function refreshInvoiceData() {
+    setError("");
+
+    await Promise.all([
+      loadInvoices(),
+      loadInvoiceRegister(),
+      loadOrders(),
+      loadApprovalRequests(),
+    ]);
+  }
+
   useEffect(() => {
     void loadInvoices();
     void loadInvoiceRegister();
     void loadOrders();
+    void loadApprovalRequests();
   }, []);
 
   useEffect(() => {
@@ -298,7 +422,7 @@ export default function InvoicesPage({
     setForm({
       ...initialForm,
       invoice_type:
-        orderContext.order_type === "PO" ? "PURCHASE" : "SALES",
+        orderContext.order_type === "PO" ? "PURCHASE" : "SERVICE",
       order_id: String(orderContext.id),
       party_id: String(orderContext.party_id),
       financial_year:
@@ -335,7 +459,7 @@ export default function InvoicesPage({
 
   function startEdit(invoice: Invoice) {
     setForm({
-      invoice_type: invoice.invoice_type as "PURCHASE" | "SALES",
+      invoice_type: invoice.invoice_type as "PURCHASE" | "SERVICE",
       invoice_number: invoice.invoice_number,
       order_id: String(invoice.order_id),
       party_id: String(invoice.party_id),
@@ -400,7 +524,9 @@ export default function InvoicesPage({
     setError("");
     setSuccess("");
 
-    if (!orderContext && editingInvoiceId === null) {
+    const isEditing = editingInvoiceId !== null;
+
+    if (!orderContext && !isEditing) {
       setError(
         "New invoices can only be created from an order's invoice page.",
       );
@@ -432,6 +558,14 @@ export default function InvoicesPage({
       return;
     }
 
+    // New invoices must include a copy for IT Head approval.
+    if (!isEditing && !invoiceFile) {
+      setError(
+        "Please attach the invoice copy before submitting it for IT Head approval.",
+      );
+      return;
+    }
+
     if (invoiceFile) {
       const validationError = validateInvoiceFile(invoiceFile);
 
@@ -449,7 +583,6 @@ export default function InvoicesPage({
 
     try {
       const token = sessionStorage.getItem("access_token");
-      const isEditing = editingInvoiceId !== null;
 
       const payload = {
         invoice_type: form.invoice_type,
@@ -466,42 +599,69 @@ export default function InvoicesPage({
         description: form.description.trim() || null,
       };
 
-      const response = await fetch(
-        isEditing
-          ? `/api/invoices/${editingInvoiceId}`
-          : "/api/invoices",
-        {
-          method: isEditing ? "PUT" : "POST",
+      let response: Response;
+
+      if (isEditing) {
+        // Existing invoices continue using the normal update endpoint.
+        response = await fetch(`/api/invoices/${editingInvoiceId}`, {
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
-        },
-      );
+        });
+      } else {
+        // New invoices go through IT Head approval.
+        // Do not set Content-Type manually for multipart FormData.
+        const formData = new FormData();
 
-      const savedInvoice = await response.json().catch(() => null);
+        formData.append("payload_json", JSON.stringify(payload));
+        formData.append("invoice_copy", invoiceFile!);
+
+        response = await fetch("/api/invoice-approvals/manual", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      }
+
+      const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
         throw new Error(
           getErrorMessage(
-            savedInvoice,
-            `Unable to ${isEditing ? "update" : "create"} invoice (${response.status}).`,
+            responseData,
+            `Unable to ${isEditing ? "update" : "submit"} invoice (${response.status}).`,
           ),
         );
       }
 
-      const savedInvoiceId: number =
-        isEditing ? editingInvoiceId! : savedInvoice.id;
+      if (!isEditing) {
+  setSuccess(
+    "Invoice approval request sent to IT Head successfully. Your request is awaiting approval.",
+  );
+
+  resetForm();
+
+  await loadApprovalRequests();
+
+  return;
+}
+
+      const savedInvoiceId = editingInvoiceId;
 
       if (!savedInvoiceId) {
         throw new Error(
-          "Invoice was saved, but the server did not return its invoice ID.",
+          "Invoice was updated, but its invoice ID could not be identified.",
         );
       }
 
       let documentUploadFailed = false;
 
+      // Invoice copy upload remains optional for existing invoice edits.
       if (invoiceFile) {
         try {
           await uploadInvoiceDocument(savedInvoiceId, invoiceFile);
@@ -509,25 +669,20 @@ export default function InvoicesPage({
           documentUploadFailed = true;
           setError(
             uploadError instanceof Error
-              ? `Invoice saved successfully, but document upload failed: ${uploadError.message}`
-              : "Invoice saved successfully, but document upload failed.",
+              ? `Invoice updated successfully, but document upload failed: ${uploadError.message}`
+              : "Invoice updated successfully, but document upload failed.",
           );
         }
       }
 
-      if (leaveOrderEditor()) return;
-
       resetForm();
 
-      if (!documentUploadFailed) {
-        setSuccess(
-          isEditing
-            ? "Invoice updated successfully."
-            : "Invoice created successfully.",
-        );
-      }
+if (!documentUploadFailed) {
+  setSuccess("Invoice updated successfully.");
+}
 
       setLoading(true);
+
       await loadInvoices();
       await loadInvoiceRegister();
     } catch (err) {
@@ -552,6 +707,7 @@ export default function InvoicesPage({
 
     try {
       const token = sessionStorage.getItem("access_token");
+
       const response = await fetch(`/api/invoices/${invoice.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -559,6 +715,7 @@ export default function InvoicesPage({
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
+
         throw new Error(
           getErrorMessage(
             data,
@@ -574,7 +731,9 @@ export default function InvoicesPage({
       );
 
       setSuccess(`Invoice "${invoice.invoice_number}" deleted successfully.`);
+
       setLoading(true);
+
       await loadInvoices();
       await loadInvoiceRegister();
     } catch (err) {
@@ -629,6 +788,7 @@ export default function InvoicesPage({
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
+
         throw new Error(
           getErrorMessage(data, "Invoice copy not found."),
         );
@@ -646,6 +806,7 @@ export default function InvoicesPage({
       );
     } catch (err) {
       previewWindow.close();
+
       setError(
         err instanceof Error ? err.message : "Unable to view invoice copy.",
       );
@@ -686,6 +847,7 @@ export default function InvoicesPage({
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
+
         throw new Error(
           getErrorMessage(data, `Unable to update date (${response.status}).`),
         );
@@ -743,7 +905,7 @@ export default function InvoicesPage({
   ).length;
 
   const salesCount = invoices.filter(
-    (invoice) => invoice.invoice_type === "SALES",
+    (invoice) => invoice.invoice_type === "SERVICE",
   ).length;
 
   function hasInvoiceDocument(invoiceId: number): boolean {
@@ -760,6 +922,193 @@ export default function InvoicesPage({
       .replace(/_/g, "-")}`;
   }
 
+  // Approval request search
+  const filteredApprovalRequests = approvalRequests.filter((request) => {
+    const query = approvalSearch.trim().toLowerCase();
+
+    if (!query) return true;
+
+    const requestOrder =
+      orders.find((order) => order.id === request.order_id);
+
+    const invoiceMatches = (request.invoice_data ?? []).some(
+      (invoice) =>
+        (invoice.invoice_number ?? "").toLowerCase().includes(query) ||
+        (invoice.invoice_type ?? "").toLowerCase().includes(query) ||
+        String(invoice.amount ?? "").toLowerCase().includes(query),
+    );
+
+    return (
+      String(request.id).includes(query) ||
+      String(request.order_id).includes(query) ||
+      (request.order_number ?? "").toLowerCase().includes(query) ||
+      (requestOrder?.order_number ?? "").toLowerCase().includes(query) ||
+      (requestOrder?.party_name ?? "").toLowerCase().includes(query) ||
+      (request.requested_by ?? "").toLowerCase().includes(query) ||
+      request.status.toLowerCase().includes(query) ||
+      request.request_type.toLowerCase().includes(query) ||
+      invoiceMatches
+    );
+  });
+
+  const pendingRequests = filteredApprovalRequests.filter(
+    (request) => request.status === "PENDING",
+  );
+
+  const approvedRequests = filteredApprovalRequests.filter(
+    (request) => request.status === "APPROVED",
+  );
+
+  const rejectedRequests = filteredApprovalRequests.filter(
+    (request) => request.status === "REJECTED",
+  );
+
+  function renderApprovalTable(
+    title: string,
+    description: string,
+    requests: ApprovalRequest[],
+    sectionStatus: "PENDING" | "APPROVED" | "REJECTED",
+  ) {
+    const invoiceRows = requests.flatMap((request) => {
+      const requestInvoices =
+        request.invoice_data?.length > 0
+          ? request.invoice_data
+          : [{}];
+
+      return requestInvoices.map((invoice, index) => ({
+        request,
+        invoice,
+        index,
+      }));
+    });
+
+    return (
+      <div className="invoice-approval-section">
+        <div className="invoice-approval-section-header">
+          <div>
+            <h4>{title}</h4>
+            <p>{description}</p>
+          </div>
+
+          <span
+            className={`invoice-approval-count invoice-approval-count-${sectionStatus.toLowerCase()}`}
+          >
+            {requests.length}
+          </span>
+        </div>
+
+        <div className="invoice-approval-table-wrapper">
+          <table className="invoice-approval-table">
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Invoice No.</th>
+                <th>Invoice Date</th>
+                <th>Order No.</th>
+                <th>Vendor</th>
+                <th>Amount</th>
+                <th>Request Type</th>
+                <th>Submitted By</th>
+                <th>Submitted On</th>
+                <th>Decision Date</th>
+                <th>Status</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {approvalLoading ? (
+                <tr>
+                  <td colSpan={12} className="invoice-empty-state">
+                    Loading approval requests...
+                  </td>
+                </tr>
+              ) : invoiceRows.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="invoice-empty-state">
+                    {approvalSearch.trim()
+                      ? "No approval requests match your search."
+                      : `No ${sectionStatus.toLowerCase()} requests found.`}
+                  </td>
+                </tr>
+              ) : (
+                invoiceRows.map(({ request, invoice, index }) => {
+                  const relatedOrder = orders.find(
+                    (order) => order.id === request.order_id,
+                  );
+
+                  const vendorName =
+                    relatedOrder?.party_name ||
+                    (invoice.party_id
+                      ? `Vendor #${invoice.party_id}`
+                      : "—");
+
+                  return (
+                    <tr key={`${request.id}-${index}`}>
+                      <td>
+                        <strong>#{request.id}</strong>
+                      </td>
+
+                      <td>
+                        <strong>
+                          {invoice.invoice_number || "—"}
+                        </strong>
+
+                        {request.invoice_count > 1 && (
+                          <small className="invoice-approval-batch-label">
+                            Invoice {index + 1} of {request.invoice_count}
+                          </small>
+                        )}
+                      </td>
+
+                      <td>{formatDate(invoice.invoice_date)}</td>
+
+                      <td>
+                        {request.order_number ||
+                          relatedOrder?.order_number ||
+                          `Order #${request.order_id}`}
+                      </td>
+
+                      <td>{vendorName}</td>
+
+                      <td>
+                        {invoice.amount !== undefined
+                          ? formatCurrency(invoice.amount)
+                          : "—"}
+                      </td>
+
+                      <td>
+                        <span className="invoice-approval-type">
+                          {request.request_type}
+                        </span>
+                      </td>
+
+                      <td>{request.requested_by || "—"}</td>
+
+                      <td>{formatDateTime(request.requested_at)}</td>
+
+                      <td>{formatDateTime(request.decided_at)}</td>
+
+                      <td>
+                        <span className={statusClass(request.status)}>
+                          {request.status}
+                        </span>
+                      </td>
+
+                      <td className="invoice-approval-remarks">
+                        {request.remarks || "—"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className="page-content">
       <div className="invoice-page-header">
@@ -774,8 +1123,10 @@ export default function InvoicesPage({
 
           <p className="page-description">
             {orderContext
-              ? `Create or update an invoice linked to order ${orderContext.order_number}.`
-              : "View invoice records, search by order or party, and edit existing invoices."}
+              ? editingInvoiceId !== null
+                ? `Update the invoice associated with order ${orderContext.order_number}.`
+                : `Submit an invoice linked to order ${orderContext.order_number} for IT Head approval.`
+              : "View invoice records, approval requests and vendor invoices."}
           </p>
         </div>
 
@@ -805,12 +1156,16 @@ export default function InvoicesPage({
       {showForm && (orderContext || editingInvoiceId !== null) && (
         <div className="invoice-form-panel">
           <h3 className="invoice-form-heading">
-            {editingInvoiceId !== null ? "Edit Invoice" : "Create Invoice"}
+            {editingInvoiceId !== null
+              ? "Edit Invoice"
+              : "Submit Invoice for Approval"}
           </h3>
 
           <p className="invoice-form-description">
             {orderContext
-              ? `This invoice will be associated with order ${orderContext.order_number}.`
+              ? editingInvoiceId !== null
+                ? `Update the invoice associated with order ${orderContext.order_number}.`
+                : "This invoice will be sent to the IT Head for approval. It will not enter the official Invoice Register until approved."
               : "Update the details of this existing invoice."}
           </p>
 
@@ -823,14 +1178,14 @@ export default function InvoicesPage({
                 onChange={(event) =>
                   updateField(
                     "invoice_type",
-                    event.target.value as "PURCHASE" | "SALES",
+                    event.target.value as "PURCHASE" | "SERVICE",
                   )
                 }
                 disabled={Boolean(orderContext) || saving}
                 required
               >
                 <option value="PURCHASE">Purchase</option>
-                <option value="SALES">Sales</option>
+                <option value="SERVICE">Sales</option>
               </select>
             </div>
 
@@ -863,7 +1218,7 @@ export default function InvoicesPage({
                     order_id: event.target.value,
                     party_id: selected ? String(selected.party_id) : "",
                     invoice_type:
-                      selected?.order_type === "SO" ? "SALES" : "PURCHASE",
+                      selected?.order_type === "SO" ? "SERVICE" : "PURCHASE",
                     financial_year:
                       selected?.financial_year ?? previous.financial_year,
                   }));
@@ -885,10 +1240,7 @@ export default function InvoicesPage({
 
             <div className="invoice-form-field">
               <label htmlFor="invoice-party-name">
-                {form.invoice_type === "PURCHASE"
-                  ? "Vendor Name"
-                  : "Customer Name"}{" "}
-                *
+                Vendor Name *
               </label>
 
               <input
@@ -896,7 +1248,7 @@ export default function InvoicesPage({
                 value={displayedPartyName}
                 placeholder={
                   form.order_id
-                    ? "Loading party name..."
+                    ? "Loading vendor name..."
                     : "Select an order first"
                 }
                 readOnly
@@ -908,7 +1260,7 @@ export default function InvoicesPage({
               <input type="hidden" name="party_id" value={form.party_id} />
 
               <small>
-                The party is linked to the selected order and cannot be changed
+                The vendor is linked to the selected order and cannot be changed
                 here.
               </small>
             </div>
@@ -1029,7 +1381,10 @@ export default function InvoicesPage({
             </div>
 
             <div className="invoice-form-field full-width">
-              <label htmlFor="invoice-document">Invoice Copy</label>
+              <label htmlFor="invoice-document">
+                Invoice Copy {editingInvoiceId === null ? "*" : ""}
+              </label>
+
               <input
                 id="invoice-document"
                 type="file"
@@ -1038,9 +1393,13 @@ export default function InvoicesPage({
                   setInvoiceFile(event.target.files?.[0] ?? null)
                 }
                 disabled={saving}
+                required={editingInvoiceId === null}
               />
 
               <small>
+                {editingInvoiceId === null
+                  ? "Required for IT Head approval. "
+                  : "Optional when editing an existing invoice. "}
                 Supported formats: PDF, PNG, JPG, JPEG. Maximum file size: 10
                 MB.
               </small>
@@ -1051,6 +1410,19 @@ export default function InvoicesPage({
                 </p>
               )}
             </div>
+
+            {editingInvoiceId === null && (
+              <div className="invoice-form-field full-width">
+                <div className="invoice-approval-notice">
+                  <strong>Approval workflow</strong>
+                  <p>
+                    Your invoice and its supporting copy will be sent to the IT
+                    Head for review. The invoice will enter the official
+                    Invoice Register only after approval.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="invoice-form-actions full-width">
               <button
@@ -1068,10 +1440,12 @@ export default function InvoicesPage({
                 disabled={saving}
               >
                 {saving
-                  ? "Saving..."
+                  ? editingInvoiceId !== null
+                    ? "Updating..."
+                    : "Submitting for Approval..."
                   : editingInvoiceId !== null
                     ? "Update Invoice"
-                    : "Create Invoice"}
+                    : "Submit for IT Head Approval"}
               </button>
             </div>
           </form>
@@ -1080,6 +1454,71 @@ export default function InvoicesPage({
 
       {!orderContext && (
         <>
+          {/* Invoice approval workflow */}
+          <div className="invoice-approvals-panel">
+            <div className="invoice-approvals-header">
+              <div>
+                <p className="eyebrow">WORKFLOW MANAGEMENT</p>
+                <h3>Invoice Approval Requests</h3>
+                <p>
+                  Track invoices submitted for IT Head review and monitor their
+                  approval decisions.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="invoice-secondary-button"
+                onClick={() => void refreshInvoiceData()}
+                disabled={approvalLoading}
+              >
+                {approvalLoading ? "Refreshing..." : "Refresh"}
+              </button>
+            </div>
+
+            <div className="invoice-approval-toolbar">
+  <div className="invoice-approval-search-group">
+    <label
+      htmlFor="approval-request-search"
+      className="invoice-approval-search-label"
+    >
+      Search Approval Requests
+    </label>
+
+    <input
+      id="approval-request-search"
+      type="text"
+      className="invoice-approval-search"
+      placeholder="Search by request ID, invoice, vendor..."
+      value={approvalSearch}
+      onChange={(e) => setApprovalSearch(e.target.value)}
+    />
+  </div>
+</div>
+
+            {renderApprovalTable(
+              "Pending Approval Requests",
+              "Invoices awaiting an IT Head decision.",
+              pendingRequests,
+              "PENDING",
+            )}
+
+            {renderApprovalTable(
+              "Approved Requests",
+              "Invoices approved and eligible for the official Invoice Register.",
+              approvedRequests,
+              "APPROVED",
+            )}
+
+            {renderApprovalTable(
+              "Rejected Requests",
+              "Requests rejected during the approval process.",
+              rejectedRequests,
+              "REJECTED",
+            )}
+          </div>
+
+          {/* Official invoice register */}
           <div className="invoice-register-summary">
             <div className="invoice-summary-card">
               <span>Total Invoices</span>
@@ -1105,9 +1544,10 @@ export default function InvoicesPage({
           <div className="invoice-register-panel">
             <div className="invoice-register-header">
               <div>
-                <h3>Invoice Register</h3>
+                <h3>Official Invoice Register</h3>
                 <p>
-                  Search, review and manage invoices recorded in the system.
+                  Search, review and manage invoices recorded in the system
+                  after approval.
                 </p>
               </div>
             </div>
@@ -1203,6 +1643,7 @@ export default function InvoicesPage({
                       const hasDocument = hasInvoiceDocument(row.id);
                       const isDocumentBusy = documentBusyId === row.id;
                       const isDateSaving = savingDateId === row.id;
+
                       const dateValue =
                         dateDrafts[row.id] ??
                         row.date_sent_to_accounts?.slice(0, 10) ??
@@ -1223,7 +1664,7 @@ export default function InvoicesPage({
                           <td>
                             {invoice?.vendor_name ||
                               row.party_name ||
-                              `Party #${row.party_id}`}
+                              `Vendor #${row.party_id}`}
                           </td>
 
                           <td>

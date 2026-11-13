@@ -41,7 +41,7 @@ def get_dashboard_summary(
         .subquery()
     )
 
-    # Outstanding balances for purchase invoices
+    # Outstanding balances for both PURCHASE and SERVICE invoices
     remaining_balance = (
         Invoice.amount
         - func.coalesce(payment_totals.c.total_paid, 0)
@@ -60,11 +60,22 @@ def get_dashboard_summary(
             payment_totals,
             Invoice.id == payment_totals.c.invoice_id,
         )
-        .filter(Invoice.invoice_type == "PURCHASE")
+        .filter(
+            Invoice.invoice_type.in_(["PURCHASE", "SERVICE"])
+        )
         .scalar()
     )
 
-    # Fetch purchase invoices with their recorded payments
+    # Initialize invoice status counts
+    status_counts = {
+        "PAID": 0,
+        "PART_PAID": 0,
+        "OVERDUE": 0,
+        "ON_HOLD": 0,
+        "UNPAID": 0,
+    }
+
+    # Fetch invoices with their actual payment totals
     invoices = (
         db.query(
             Invoice,
@@ -76,45 +87,40 @@ def get_dashboard_summary(
             payment_totals,
             Invoice.id == payment_totals.c.invoice_id,
         )
-        .filter(Invoice.invoice_type == "PURCHASE")
+        .filter(
+            Invoice.invoice_type.in_(["PURCHASE", "SERVICE"])
+        )
         .all()
     )
 
-    status_counts = {
-        "PAID": 0,
-        "PART_PAID": 0,
-        "OVERDUE": 0,
-        "ON_HOLD": 0,
-        "UNPAID": 0,
-    }
-
     today = date.today()
 
-    for invoice, paid_value in invoices:
-        amount = Decimal(str(invoice.amount))
-        total_paid = Decimal(str(paid_value))
-        balance_due = amount - total_paid
+    for invoice, total_paid in invoices:
+        amount = Decimal(str(invoice.amount or 0))
+        paid = Decimal(str(total_paid or 0))
 
-        # Workflow status takes precedence over payment status
-        if (invoice.status or "").strip().upper() == "ON_HOLD":
+        balance = amount - paid
+
+        if invoice.status == "ON_HOLD":
             status = "ON_HOLD"
-        elif balance_due <= 0:
+        elif balance <= 0:
             status = "PAID"
-        elif invoice.due_date < today:
+        elif invoice.due_date and invoice.due_date < today:
             status = "OVERDUE"
-        elif total_paid > 0:
+        elif paid > 0:
             status = "PART_PAID"
         else:
             status = "UNPAID"
 
         status_counts[status] += 1
 
+    # IMPORTANT: Return the response expected by DashboardPage.tsx
     return {
         "total_vendor_order_amount": str(
-            Decimal(str(total_orders))
+            Decimal(str(total_orders or 0))
         ),
         "total_balance_payout_due": str(
-            Decimal(str(total_due))
+            Decimal(str(total_due or 0))
         ),
         "invoice_status_counts": status_counts,
     }

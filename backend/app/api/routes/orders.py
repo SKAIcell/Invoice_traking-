@@ -667,7 +667,7 @@ def get_order(
     return get_order_summary(db, order)
 
 
-@router.patch(
+@router.put(
     "/{order_id}",
     response_model=OrderResponse,
     dependencies=[Depends(require_roles("ADMIN", "ACCOUNTS"))],

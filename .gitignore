@@ -1,12 +1,14 @@
-# Backend local files and environment
-backend/invoice_tracking/
+
+# Backend environment and local files
 backend/.env
-backend/.postgres.env
+backend/.env.*
+backend/uploads/
 backend/app/uploads/
+backend/invoice_tracking/
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
 venv/
 
@@ -22,3 +24,11 @@ dist/
 
 # Logs
 *.log
+
+# Local database backups and dumps
+*.sql
+*.sql.gz
+
+# Temporary files
+*.tmp
+*.bak

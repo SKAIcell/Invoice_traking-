@@ -1,3 +1,4 @@
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -19,11 +20,12 @@ class Budget(Base):
 
     __table_args__ = (
         UniqueConstraint(
-    "financial_year",
-    "name",
-    "budget_type",
-    name="uq_budget_fy_name_type",
-),CheckConstraint(
+            "financial_year",
+            "name",
+            "budget_type",
+            name="uq_budget_fy_name_type",
+        ),
+        CheckConstraint(
             "planned_amount >= 0",
             name="ck_budget_planned_positive",
         ),
@@ -57,6 +59,7 @@ class Budget(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+
     financial_year: Mapped[str] = mapped_column(
         String(9),
         nullable=False,
@@ -72,9 +75,15 @@ class Budget(Base):
         Numeric(18, 2),
         nullable=False,
     )
+
     approved_amount: Mapped[Decimal] = mapped_column(
         Numeric(18, 2),
         nullable=False,
+    )
+
+    approval_copy_path: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -82,3 +91,7 @@ class Budget(Base):
         nullable=False,
         server_default=func.now(),
     )
+
+    @property
+    def has_approval_copy(self) -> bool:
+        return bool(self.approval_copy_path)

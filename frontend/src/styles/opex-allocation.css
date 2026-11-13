@@ -1,0 +1,477 @@
+
+.opex-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 30px;
+  color: #1f2937;
+}
+
+.opex-page-header,
+.opex-card-header,
+.opex-category-heading,
+.opex-approval-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.opex-page-header h1 {
+  margin: 5px 0 8px;
+  color: #172b4d;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.opex-eyebrow,
+.opex-section-label {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.opex-subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.opex-category-panel,
+.opex-content-card {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e5eaf1;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.opex-category-heading {
+  margin-bottom: 22px;
+}
+
+.opex-category-heading h2,
+.opex-card-header h2 {
+  margin: 6px 0 0;
+  color: #172b4d;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.opex-category-heading select {
+  width: min(100%, 520px);
+  min-height: 44px;
+  padding: 10px 13px;
+  color: #26364b;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.opex-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.opex-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid #e8edf4;
+  border-radius: 9px;
+}
+
+.opex-summary-card span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.opex-summary-card strong {
+  color: #172b4d;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.opex-request-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.opex-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.opex-form-field label {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.opex-form-field input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: #1e293b;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  font: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.opex-form-field input:focus,
+.opex-search:focus {
+  border-color: #2b65b1;
+  box-shadow: 0 0 0 3px rgba(43, 101, 177, 0.12);
+}
+
+.opex-form-field input[readonly] {
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.opex-form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.opex-form-actions {
+  display: flex;
+  align-items: end;
+}
+
+.opex-form-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.opex-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.opex-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.opex-button-primary {
+  color: #fff;
+  background: #174ea6;
+}
+
+.opex-button-primary:hover:not(:disabled) {
+  background: #123f87;
+}
+
+.opex-button-secondary {
+  color: #334155;
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+.opex-button-secondary:hover {
+  background: #f8fafc;
+}
+
+.opex-button-approve {
+  color: #fff;
+  background: #16794b;
+}
+
+.opex-button-approve:hover:not(:disabled) {
+  background: #12633e;
+}
+
+.opex-button-reject {
+  color: #a12a22;
+  background: #fff;
+  border-color: #e5b8b5;
+}
+
+.opex-button-reject:hover:not(:disabled) {
+  background: #fff5f4;
+}
+
+.opex-card-header {
+  margin-bottom: 20px;
+}
+
+.opex-search {
+  width: 260px;
+  max-width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.opex-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.opex-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.opex-table th {
+  padding: 13px 14px;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.opex-table td {
+  padding: 15px 14px;
+  color: #475569;
+  border-bottom: 1px solid #edf1f5;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.opex-table td strong {
+  color: #243247;
+  font-weight: 600;
+}
+
+.opex-table tbody tr:hover {
+  background: #fbfcfe;
+}
+
+.opex-table-action {
+  padding: 7px 10px;
+  color: #174ea6;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.opex-table-action:hover {
+  background: #dbeafe;
+}
+
+.opex-empty,
+.opex-empty-state {
+  padding: 30px !important;
+  color: #94a3b8 !important;
+  text-align: center;
+}
+
+.opex-empty-state {
+  font-size: 13px;
+}
+
+.opex-count-pill {
+  padding: 7px 11px;
+  color: #92400e;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.opex-status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.opex-status-pending {
+  color: #92400e;
+  background: #fff7ed;
+}
+
+.opex-status-approved {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.opex-status-rejected {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.opex-approval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.opex-approval-card {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fcfdff;
+}
+
+.opex-request-id {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.opex-approval-top h3 {
+  margin: 6px 0;
+  color: #172b4d;
+  font-size: 17px;
+}
+
+.opex-approval-top p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.opex-request-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.opex-request-details div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opex-request-details span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.opex-request-details strong {
+  color: #334155;
+  font-size: 13px;
+}
+
+.opex-approval-fields {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
+}
+
+.opex-approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.opex-alert {
+  padding: 13px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.opex-alert-error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.opex-alert-success {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.opex-loading {
+  padding: 35px;
+  color: #64748b;
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (max-width: 1100px) {
+  .opex-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .opex-page {
+    padding: 18px;
+    gap: 18px;
+  }
+
+  .opex-page-header,
+  .opex-category-heading,
+  .opex-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .opex-category-heading select,
+  .opex-search {
+    width: 100%;
+  }
+
+  .opex-summary-grid,
+  .opex-request-form,
+  .opex-request-details,
+  .opex-approval-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .opex-form-field-wide,
+  .opex-form-note {
+    grid-column: auto;
+  }
+
+  .opex-approval-top {
+    align-items: flex-start;
+  }
+}

@@ -191,6 +191,7 @@ function DonutChart({
   const placedLength = circumference * placedRatio;
   const availableLength = circumference - placedLength;
   const isOverBudget = summary.orderPlaced > summary.approved;
+
   const displayUtilization =
     summary.approved > 0 ? `${summary.utilization.toFixed(1)}%` : '—';
 
@@ -305,16 +306,6 @@ function DonutChart({
             {formatCurrency(summary.orderPlaced - summary.approved)}
           </div>
         )}
-{/* 
-        {hasUtilizedOrders && (
-          // <button
-          //   type="button"
-          //   className="budget-orders-link"
-          //   onClick={onUtilizedSelect}
-          // >
-          //   View {summary.type} orders
-          // </button>
-        )} */}
       </div>
     </div>
   );
@@ -365,8 +356,6 @@ function BudgetCard({
           No approved budget recorded for this category and financial year.
         </p>
       )}
-
-      
     </article>
   );
 }
@@ -441,15 +430,17 @@ function DashboardPage({
       customerResult,
     ] = results;
 
+    // Dashboard summary
     if (dashboardResult.status === 'fulfilled') {
       const summary = dashboardResult.value;
 
-      if (summary.invoice_status_counts) {
+      if (summary && summary.invoice_status_counts) {
         setDashboard(summary);
       } else {
         setDashboardError(
           'The dashboard returned incomplete invoice status data.',
         );
+        setDashboard(null);
       }
     } else {
       setDashboardError(
@@ -457,8 +448,10 @@ function DashboardPage({
           ? dashboardResult.reason.message
           : 'Unable to load dashboard data.',
       );
+      setDashboard(null);
     }
 
+    // Budgets
     if (budgetResult.status === 'fulfilled') {
       try {
         setBudgets(readArray<BudgetRecord>(budgetResult.value));
@@ -479,6 +472,7 @@ function DashboardPage({
       );
     }
 
+    // Orders
     if (orderResult.status === 'fulfilled') {
       try {
         setOrders(readArray<OrderRecord>(orderResult.value));
@@ -499,6 +493,7 @@ function DashboardPage({
       );
     }
 
+    // Vendors and customers
     const loadedParties: VendorRecord[] = [];
     let partyLoadFailed = false;
 
@@ -554,24 +549,21 @@ function DashboardPage({
 
       const budgetIds = new Set(categoryBudgets.map((budget) => budget.id));
 
-      // Purchase orders are linked to CAPEX budgets by the current data model.
-      // Service orders are displayed under OPEX, but have no budget_id.
-      // Count orders against their matching financial-year budget.
-// PO amounts contribute to CAPEX; SO amounts contribute to OPEX.
-const expectedOrderType = type === 'CAPEX' ? 'PO' : 'SO';
+      // PO amounts contribute to CAPEX; SO amounts contribute to OPEX.
+      const expectedOrderType = type === 'CAPEX' ? 'PO' : 'SO';
 
-const orderPlaced = orders
-  .filter(
-    (order) =>
-      order.order_type === expectedOrderType &&
-      order.budget_id !== null &&
-      budgetIds.has(order.budget_id) &&
-      order.status.toUpperCase() !== 'CANCELLED',
-  )
-  .reduce(
-    (total, order) => total + Number(order.amount || 0),
-    0,
-  );
+      const orderPlaced = orders
+        .filter(
+          (order) =>
+            order.order_type === expectedOrderType &&
+            order.budget_id !== null &&
+            budgetIds.has(order.budget_id) &&
+            order.status.toUpperCase() !== 'CANCELLED',
+        )
+        .reduce(
+          (total, order) => total + Number(order.amount || 0),
+          0,
+        );
 
       const available = approved - orderPlaced;
       const utilization =
@@ -602,11 +594,14 @@ const orderPlaced = orders
       )
       .forEach((order) => {
         const party = partyMap.get(order.party_id);
+
         const partyName =
           party?.name ||
           order.party_name ||
           `${order.order_type === 'SO' ? 'Customer' : 'Vendor'} #${order.party_id}`;
+
         const partyCode = party?.code || order.party_code || '';
+
         const partyLocation =
           order.location?.trim() ||
           party?.address?.trim() ||
@@ -793,10 +788,10 @@ const orderPlaced = orders
         </div>
 
         <p className="dashboard-footnote">
-  OPEX utilization is calculated from non-cancelled service orders
-  linked to OPEX budgets. CAPEX utilization is calculated from
-  non-cancelled purchase orders linked to CAPEX budgets.
-</p>
+          OPEX utilization is calculated from non-cancelled service orders
+          linked to OPEX budgets. CAPEX utilization is calculated from
+          non-cancelled purchase orders linked to CAPEX budgets.
+        </p>
       </section>
 
       <section className="dashboard-vendors-section">
@@ -892,7 +887,13 @@ const orderPlaced = orders
           <table className="vendor-orders-table">
             <thead>
               <tr>
-                <th>{categoryFilter === 'OPEX' ? 'Customer' : categoryFilter === 'CAPEX' ? 'Vendor' : 'Vendor / customer'}</th>
+                <th>
+                  {categoryFilter === 'OPEX'
+                    ? 'Customer'
+                    : categoryFilter === 'CAPEX'
+                      ? 'Vendor'
+                      : 'Vendor / customer'}
+                </th>
                 <th>Order count</th>
                 <th>Order value</th>
                 <th>Location</th>
@@ -982,7 +983,7 @@ const orderPlaced = orders
               </div>
 
               <strong>
-                {formatCount(dashboard?.invoice_status_counts[item.key])}
+                {formatCount(dashboard?.invoice_status_counts?.[item.key])}
               </strong>
 
               <small>{item.description}</small>

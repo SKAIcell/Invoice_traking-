@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.api.router import api_router
+from app.api.routes import invoice_approvals
 
 
 settings = get_settings()
@@ -41,4 +42,8 @@ def health_check():
     return {"status": "ok"}
 
 
+# Main API routes
 app.include_router(api_router, prefix="/api")
+
+# Invoice approval routes
+app.include_router(invoice_approvals.router, prefix="/api")
