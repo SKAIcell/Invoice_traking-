@@ -96,13 +96,12 @@ function InvoiceSearch({
     if (!searchTerm) return invoices.slice(0, 8);
 
     return invoices
-      .filter((item) => {
-        return (
+      .filter(
+        (item) =>
           item.invoice_number.toLowerCase().includes(searchTerm) ||
           (item.party_name ?? "").toLowerCase().includes(searchTerm) ||
-          String(item.id).includes(searchTerm)
-        );
-      })
+          String(item.id).includes(searchTerm),
+      )
       .slice(0, 8);
   }, [invoices, query]);
 
@@ -117,8 +116,6 @@ function InvoiceSearch({
     if (exactMatch) {
       onSelect(String(exactMatch.id));
       setShowResults(false);
-    } else if (!value.trim()) {
-      onSelect("");
     } else {
       onSelect("");
     }
@@ -182,7 +179,8 @@ export default function PaymentsPage({
   const [payments, setPayments] = useState<Payment[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRegisterRow[]>([]);
 
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(
+  // History filter is independent of the invoice selected in the form.
+  const [historyInvoiceId, setHistoryInvoiceId] = useState(
     invoice ? String(invoice.id) : "",
   );
 
@@ -194,6 +192,7 @@ export default function PaymentsPage({
     notes: "",
   });
 
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -254,7 +253,8 @@ export default function PaymentsPage({
 
   useEffect(() => {
     if (invoice) {
-      setSelectedInvoiceId(String(invoice.id));
+      setHistoryInvoiceId(String(invoice.id));
+
       setForm((current) => ({
         ...current,
         invoice_id: String(invoice.id),
@@ -262,32 +262,63 @@ export default function PaymentsPage({
     }
   }, [invoice]);
 
-  const selectedInvoice = useMemo(() => {
-    if (!selectedInvoiceId) return null;
+  // Close the modal with the Escape key.
+  useEffect(() => {
+    if (!modalOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !saving) {
+        setModalOpen(false);
+        setError("");
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [modalOpen, saving]);
+
+  const historyInvoice = useMemo(() => {
+    if (!historyInvoiceId) return null;
 
     return (
-      invoices.find((item) => item.id === Number(selectedInvoiceId)) ??
-      (invoice?.id === Number(selectedInvoiceId) ? invoice : null)
+      invoices.find((item) => item.id === Number(historyInvoiceId)) ??
+      (invoice?.id === Number(historyInvoiceId) ? invoice : null)
     );
-  }, [invoices, selectedInvoiceId, invoice]);
+  }, [invoices, historyInvoiceId, invoice]);
+
+  const formInvoice = useMemo(() => {
+    if (!form.invoice_id) return null;
+
+    return (
+      invoices.find((item) => item.id === Number(form.invoice_id)) ??
+      (invoice?.id === Number(form.invoice_id) ? invoice : null)
+    );
+  }, [invoices, form.invoice_id, invoice]);
 
   const filteredPayments = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
     return payments
       .filter((payment) =>
-        selectedInvoiceId
-          ? payment.invoice_id === Number(selectedInvoiceId)
+        historyInvoiceId
+          ? payment.invoice_id === Number(historyInvoiceId)
           : true,
       )
       .filter((payment) => {
-        if (!search.trim()) return true;
+        if (!query) return true;
 
-        const query = search.toLowerCase();
+        const relatedInvoice = invoices.find(
+          (item) => item.id === payment.invoice_id,
+        );
 
         return (
           String(payment.id).includes(query) ||
           String(payment.invoice_id).includes(query) ||
           (payment.reference_number ?? "").toLowerCase().includes(query) ||
-          (payment.notes ?? "").toLowerCase().includes(query)
+          (payment.notes ?? "").toLowerCase().includes(query) ||
+          (relatedInvoice?.invoice_number ?? "").toLowerCase().includes(query) ||
+          (relatedInvoice?.party_name ?? "").toLowerCase().includes(query)
         );
       })
       .sort(
@@ -295,24 +326,21 @@ export default function PaymentsPage({
           new Date(b.payment_date).getTime() -
           new Date(a.payment_date).getTime(),
       );
-  }, [payments, selectedInvoiceId, search]);
-
-  const totalPaid = selectedInvoice
-    ? Number(selectedInvoice.total_paid ?? 0)
-    : 0;
-
-  const balanceDue = selectedInvoice
-    ? Number(selectedInvoice.balance_due ?? 0)
-    : 0;
-
-  const invoiceAmount = selectedInvoice
-    ? Number(selectedInvoice.amount ?? 0)
-    : 0;
+  }, [payments, historyInvoiceId, search, invoices]);
 
   const totalPaymentsDisplayed = filteredPayments.reduce(
     (total, payment) => total + Number(payment.amount),
     0,
   );
+
+  const totalPaymentsAll = payments.reduce(
+    (total, payment) => total + Number(payment.amount),
+    0,
+  );
+
+  const invoicesWithPayments = new Set(
+    payments.map((payment) => payment.invoice_id),
+  ).size;
 
   function updateForm(field: keyof PaymentForm, value: string) {
     setForm((current) => ({
@@ -321,11 +349,31 @@ export default function PaymentsPage({
     }));
   }
 
-  function handleInvoiceChange(value: string) {
-    setSelectedInvoiceId(value);
-    updateForm("invoice_id", value);
-    setSuccess("");
+  function openPaymentModal() {
     setError("");
+    setSuccess("");
+
+    setForm({
+      invoice_id: invoice ? String(invoice.id) : "",
+      payment_date: getToday(),
+      amount: "",
+      reference_number: "",
+      notes: "",
+    });
+
+    setModalOpen(true);
+  }
+
+  function closePaymentModal() {
+    if (saving) return;
+
+    setModalOpen(false);
+    setError("");
+  }
+
+  function handleHistoryInvoiceChange(value: string) {
+    setHistoryInvoiceId(value);
+    setSearch("");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -397,16 +445,19 @@ export default function PaymentsPage({
       }
 
       setSuccess("Payment recorded successfully.");
+      setModalOpen(false);
 
-      setForm((current) => ({
-        ...current,
+      // Keep the existing history filter. If the page was opened from
+      // an invoice, that invoice context remains selected.
+      await loadData();
+
+      setForm({
+        invoice_id: invoice ? String(invoice.id) : "",
+        payment_date: getToday(),
         amount: "",
         reference_number: "",
         notes: "",
-        payment_date: getToday(),
-      }));
-
-      await loadData();
+      });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Unable to record payment.",
@@ -423,7 +474,7 @@ export default function PaymentsPage({
           <p className="payments-eyebrow">FINANCE OPERATIONS</p>
           <h1>Payment Management</h1>
           <p className="payments-subtitle">
-            Record vendor payments and monitor invoice settlement history.
+            Monitor vendor payments and manage invoice settlement records.
           </p>
         </div>
 
@@ -446,10 +497,19 @@ export default function PaymentsPage({
           >
             Refresh records
           </button>
+
+          <button
+            type="button"
+            className="payments-record-button"
+            onClick={openPaymentModal}
+          >
+            <span className="payments-record-button-icon">+</span>
+            Record Payment
+          </button>
         </div>
       </div>
 
-      {error && (
+      {error && !modalOpen && (
         <div className="payments-alert payments-alert-error" role="alert">
           {error}
         </div>
@@ -461,249 +521,359 @@ export default function PaymentsPage({
         </div>
       )}
 
-      <div className="payments-invoice-selector">
-        <div className="payments-invoice-selector-field">
-          <label htmlFor="payment-invoice-select">Search invoice</label>
+      <div className="payments-overview-grid">
+        <article className="payments-overview-card payments-overview-primary">
+          <div className="payments-overview-icon">₹</div>
+          <div>
+            <span>Total payments recorded</span>
+            <strong>{formatAmount(totalPaymentsAll)}</strong>
+            <small>Across all invoice payments</small>
+          </div>
+        </article>
 
-          <InvoiceSearch
-            id="payment-invoice-select"
-            invoices={invoices}
-            selectedId={selectedInvoiceId}
-            onSelect={handleInvoiceChange}
-            placeholder="Type invoice number, vendor or ID..."
-          />
+        <article className="payments-overview-card">
+          <div className="payments-overview-icon payments-overview-icon-blue">
+            <span>#</span>
+          </div>
+          <div>
+            <span>Payment records</span>
+            <strong>{payments.length.toLocaleString("en-IN")}</strong>
+            <small>Total recorded transactions</small>
+          </div>
+        </article>
+
+        <article className="payments-overview-card">
+          <div className="payments-overview-icon payments-overview-icon-teal">
+            <span>↗</span>
+          </div>
+          <div>
+            <span>Invoices with payments</span>
+            <strong>{invoicesWithPayments.toLocaleString("en-IN")}</strong>
+            <small>Distinct invoices settled in part or full</small>
+          </div>
+        </article>
+      </div>
+
+      <section className="payments-panel payments-history-panel">
+        <div className="payments-panel-heading">
+          <div>
+            <p className="payments-section-eyebrow">TRANSACTION REGISTER</p>
+            <h2>Payment History</h2>
+            <p>
+              {historyInvoice
+                ? `Payments recorded against ${historyInvoice.invoice_number}.`
+                : "View and track all recorded invoice payments."}
+            </p>
+          </div>
+
+          <span className="payments-history-count">
+            {filteredPayments.length}{" "}
+            {filteredPayments.length === 1 ? "record" : "records"}
+          </span>
         </div>
 
-        {selectedInvoice && (
-          <div className="payments-selected-invoice">
-            <span>Selected invoice</span>
-            <strong>{selectedInvoice.invoice_number}</strong>
-            <span>{selectedInvoice.party_name ?? "Unknown vendor"}</span>
+        <div className="payments-history-toolbar">
+          <div className="payments-history-filters">
+            <div className="payments-filter-field">
+              <label htmlFor="payment-history-invoice">Filter by invoice</label>
+              <InvoiceSearch
+                id="payment-history-invoice"
+                invoices={invoices}
+                selectedId={historyInvoiceId}
+                onSelect={handleHistoryInvoiceChange}
+                placeholder="All invoices — search to filter"
+              />
+            </div>
 
-            {selectedInvoice.order_id && onOpenOrder && (
+            <div className="payments-filter-field payments-history-search">
+              <label htmlFor="payment-history-search">Search records</label>
+              <input
+                id="payment-history-search"
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Payment ID, vendor, reference or notes..."
+              />
+            </div>
+
+            {historyInvoiceId && (
               <button
                 type="button"
-                className="payments-text-button"
-                onClick={() => void onOpenOrder(selectedInvoice.order_id)}
+                className="payments-clear-filter"
+                onClick={() => handleHistoryInvoiceChange("")}
               >
-                View related order
+                Clear invoice filter
               </button>
             )}
           </div>
-        )}
-      </div>
 
-      {selectedInvoice && (
-        <div className="payments-summary-grid">
-          <article className="payments-summary-card">
-            <span className="payments-summary-label">Invoice amount</span>
-            <strong>{formatAmount(invoiceAmount)}</strong>
-          </article>
-
-          <article className="payments-summary-card">
-            <span className="payments-summary-label">Total paid</span>
-            <strong>{formatAmount(totalPaid)}</strong>
-          </article>
-
-          <article className="payments-summary-card">
-            <span className="payments-summary-label">Balance due</span>
-            <strong>{formatAmount(balanceDue)}</strong>
-          </article>
+          <div className="payments-displayed-total">
+            <span>Displayed payment total</span>
+            <strong>{formatAmount(totalPaymentsDisplayed)}</strong>
+          </div>
         </div>
-      )}
 
-      <div className="payments-content-grid">
-        <section className="payments-panel payments-form-panel">
-          <div className="payments-panel-heading">
-            <div>
-              <h2>Record a payment</h2>
-              <p>Enter the payment details below.</p>
-            </div>
+        {loading ? (
+          <div className="payments-empty-state">
+            <span className="payments-loading-indicator" />
+            Loading payment records...
           </div>
-
-          <form onSubmit={handleSubmit} className="payments-form">
-            <div className="payments-form-field">
-              <label htmlFor="payment-form-invoice">
-                Invoice <span>*</span>
-              </label>
-
-              <InvoiceSearch
-                id="payment-form-invoice"
-                invoices={invoices}
-                selectedId={form.invoice_id}
-                onSelect={(value) => {
-                  updateForm("invoice_id", value);
-                  setSelectedInvoiceId(value);
-                  setError("");
-                  setSuccess("");
-                }}
-                placeholder="Search invoice number or vendor..."
-              />
-            </div>
-
-            <div className="payments-form-row">
-              <div className="payments-form-field">
-                <label htmlFor="payment-date">
-                  Payment date <span>*</span>
-                </label>
-
-                <input
-                  id="payment-date"
-                  type="date"
-                  value={form.payment_date}
-                  onChange={(event) =>
-                    updateForm("payment_date", event.target.value)
-                  }
-                  required
-                />
-              </div>
-
-              <div className="payments-form-field">
-                <label htmlFor="payment-amount">
-                  Payment amount (₹) <span>*</span>
-                </label>
-
-                <input
-                  id="payment-amount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={form.amount}
-                  onChange={(event) =>
-                    updateForm("amount", event.target.value)
-                  }
-                  placeholder="Enter amount"
-                  required
-                />
-              </div>
-            </div>
-
-            {selectedInvoice && (
-              <p className="payments-balance-hint">
-                Outstanding balance: <strong>{formatAmount(balanceDue)}</strong>
-              </p>
+        ) : filteredPayments.length === 0 ? (
+          <div className="payments-empty-state">
+            <div className="payments-empty-icon">₹</div>
+            <strong>No payment records found</strong>
+            <p>
+              {search || historyInvoiceId
+                ? "Try changing your search or clearing the invoice filter."
+                : "Payment records will appear here after the first payment is recorded."}
+            </p>
+            {!search && !historyInvoiceId && (
+              <button
+                type="button"
+                className="payments-empty-action"
+                onClick={openPaymentModal}
+              >
+                Record your first payment
+              </button>
             )}
-
-            <div className="payments-form-field">
-              <label htmlFor="payment-reference">Reference number</label>
-
-              <input
-                id="payment-reference"
-                type="text"
-                value={form.reference_number}
-                onChange={(event) =>
-                  updateForm("reference_number", event.target.value)
-                }
-                placeholder="UTR / transaction reference"
-                maxLength={100}
-              />
-            </div>
-
-            <div className="payments-form-field">
-              <label htmlFor="payment-notes">Notes</label>
-
-              <textarea
-                id="payment-notes"
-                value={form.notes}
-                onChange={(event) =>
-                  updateForm("notes", event.target.value)
-                }
-                placeholder="Additional payment remarks..."
-                rows={3}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="payments-submit-button"
-              disabled={saving || loading}
-            >
-              {saving ? "Recording payment..." : "Record payment"}
-            </button>
-          </form>
-        </section>
-
-        <section className="payments-panel payments-history-panel">
-          <div className="payments-panel-heading">
-            <div>
-              <h2>Payment history</h2>
-              <p>
-                {selectedInvoice
-                  ? `Payments recorded against ${selectedInvoice.invoice_number}.`
-                  : "All recorded invoice payments."}
-              </p>
-            </div>
-
-            <span className="payments-history-count">
-              {filteredPayments.length}{" "}
-              {filteredPayments.length === 1 ? "record" : "records"}
-            </span>
           </div>
+        ) : (
+          <div className="payments-table-wrapper">
+            <table className="payments-table">
+              <thead>
+                <tr>
+                  <th>Payment ID</th>
+                  <th>Invoice</th>
+                  <th>Vendor</th>
+                  <th>Payment date</th>
+                  <th>Amount</th>
+                  <th>Reference number</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
 
-          <div className="payments-history-toolbar">
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search reference, payment ID or notes..."
-              aria-label="Search payment history"
-            />
+              <tbody>
+                {filteredPayments.map((payment) => {
+                  const relatedInvoice = invoices.find(
+                    (item) => item.id === payment.invoice_id,
+                  );
 
-            <span>
-              Displayed total:{" "}
-              <strong>{formatAmount(totalPaymentsDisplayed)}</strong>
-            </span>
-          </div>
-
-          {loading ? (
-            <div className="payments-empty-state">
-              Loading payment records...
-            </div>
-          ) : filteredPayments.length === 0 ? (
-            <div className="payments-empty-state">
-              <strong>No payment records found</strong>
-              <p>
-                Payments recorded against the selected invoice will appear here.
-              </p>
-            </div>
-          ) : (
-            <div className="payments-table-wrapper">
-              <table className="payments-table">
-                <thead>
-                  <tr>
-                    <th>Payment ID</th>
-                    <th>Invoice ID</th>
-                    <th>Payment date</th>
-                    <th>Amount</th>
-                    <th>Reference number</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredPayments.map((payment) => (
+                  return (
                     <tr key={payment.id}>
-                      <td>#{payment.id}</td>
-                      <td>{payment.invoice_id}</td>
+                      <td>
+                        <span className="payments-id-badge">
+                          #{payment.id}
+                        </span>
+                      </td>
+                      <td>
+                        <strong className="payments-invoice-number">
+                          {relatedInvoice?.invoice_number ??
+                            `Invoice #${payment.invoice_id}`}
+                        </strong>
+                        <small className="payments-table-subtext">
+                          ID: {payment.invoice_id}
+                        </small>
+                      </td>
+                      <td>
+                        {relatedInvoice?.party_name ?? "—"}
+                      </td>
                       <td>{formatDate(payment.payment_date)}</td>
                       <td className="payments-amount-cell">
                         {formatAmount(payment.amount)}
                       </td>
                       <td>{payment.reference_number || "—"}</td>
-                      <td>{payment.notes || "—"}</td>
+                      <td className="payments-notes-cell">
+                        {payment.notes || "—"}
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      </div>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="payments-table-footer">
+          <span>
+            Showing {filteredPayments.length} of {payments.length} payment
+            records
+          </span>
+          <span>Amounts displayed in INR (₹)</span>
+        </div>
+      </section>
 
       <div className="payments-page-footer">
         <span>Skipper Limited · Internal Finance Operations</span>
         <span>Payment records are linked to invoice records</span>
       </div>
+
+      {modalOpen && (
+        <div
+          className="payments-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closePaymentModal();
+            }
+          }}
+        >
+          <section
+            className="payments-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payments-modal-title"
+          >
+            <div className="payments-modal-header">
+              <div>
+                <p className="payments-section-eyebrow">FINANCE OPERATIONS</p>
+                <h2 id="payments-modal-title">Record a Payment</h2>
+                <p>Enter the details of the vendor invoice payment.</p>
+              </div>
+
+              <button
+                type="button"
+                className="payments-modal-close"
+                onClick={closePaymentModal}
+                disabled={saving}
+                aria-label="Close payment form"
+              >
+                ×
+              </button>
+            </div>
+
+            {error && (
+              <div className="payments-alert payments-alert-error" role="alert">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="payments-form">
+              <div className="payments-form-field">
+                <label htmlFor="payment-form-invoice">
+                  Invoice <span>*</span>
+                </label>
+
+                <InvoiceSearch
+                  id="payment-form-invoice"
+                  invoices={invoices}
+                  selectedId={form.invoice_id}
+                  onSelect={(value) => {
+                    updateForm("invoice_id", value);
+                    setError("");
+                  }}
+                  placeholder="Search invoice number or vendor..."
+                />
+              </div>
+
+              {formInvoice && (
+                <div className="payments-modal-invoice-info">
+                  <div>
+                    <span>Selected vendor</span>
+                    <strong>
+                      {formInvoice.party_name ?? "Unknown vendor"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Outstanding balance</span>
+                    <strong>
+                      {formatAmount(formInvoice.balance_due)}
+                    </strong>
+                  </div>
+                  {formInvoice.order_id && onOpenOrder && (
+                    <button
+                      type="button"
+                      className="payments-text-button"
+                      onClick={() => void onOpenOrder(formInvoice.order_id)}
+                    >
+                      View related order
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="payments-form-row">
+                <div className="payments-form-field">
+                  <label htmlFor="payment-date">
+                    Payment date <span>*</span>
+                  </label>
+                  <input
+                    id="payment-date"
+                    type="date"
+                    value={form.payment_date}
+                    onChange={(event) =>
+                      updateForm("payment_date", event.target.value)
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="payments-form-field">
+                  <label htmlFor="payment-amount">
+                    Payment amount (₹) <span>*</span>
+                  </label>
+                  <input
+                    id="payment-amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={(event) =>
+                      updateForm("amount", event.target.value)
+                    }
+                    placeholder="Enter amount"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="payments-form-field">
+                <label htmlFor="payment-reference">Reference number</label>
+                <input
+                  id="payment-reference"
+                  type="text"
+                  value={form.reference_number}
+                  onChange={(event) =>
+                    updateForm("reference_number", event.target.value)
+                  }
+                  placeholder="UTR / transaction reference"
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="payments-form-field">
+                <label htmlFor="payment-notes">Notes</label>
+                <textarea
+                  id="payment-notes"
+                  value={form.notes}
+                  onChange={(event) =>
+                    updateForm("notes", event.target.value)
+                  }
+                  placeholder="Additional payment remarks..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="payments-modal-actions">
+                <button
+                  type="button"
+                  className="payments-modal-cancel"
+                  onClick={closePaymentModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="payments-submit-button"
+                  disabled={saving || loading}
+                >
+                  {saving ? "Recording payment..." : "Confirm Payment"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

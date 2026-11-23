@@ -1,16 +1,16 @@
+
 import { useEffect, useRef, useState } from 'react';
 import InvoicesPage, {
   type Invoice,
   type InvoiceRegisterRow,
 } from './pages/InvoicesPage';
-import CompanyLogo from "./components/CompanyLogo";
+import CompanyLogo from './components/CompanyLogo';
 import OrdersPage from './pages/OrdersPage';
 import BudgetsPage from './pages/BudgetsPage';
 import OrderInvoicesPage from './pages/OrderInvoicesPage';
 import DashboardPage from './pages/DashboardPage';
 import VendorsPage from './pages/VendorsPage';
 import PaymentsPage from './pages/PaymentsPage';
-
 
 type OrderCategoryFilter = 'ALL' | 'OPEX' | 'CAPEX';
 
@@ -58,8 +58,6 @@ const DEFAULT_NAVIGATION_STATE: AppNavigationState = {
   selectedInvoiceToEdit: null,
 };
 
-
-
 function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -67,6 +65,9 @@ function App() {
   const [error, setError] = useState('');
 
   const [activePage, setActivePage] = useState('dashboard');
+
+  // Controls the hamburger sidebar.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [selectedPaymentInvoice, setSelectedPaymentInvoice] =
     useState<InvoiceRegisterRow | null>(null);
@@ -106,6 +107,7 @@ function App() {
     setInitialCategoryFilter(next.initialCategoryFilter);
     setInvoiceEditorMode(next.invoiceEditorMode);
     setSelectedInvoiceToEdit(next.selectedInvoiceToEdit);
+    setSidebarOpen(false);
   }
 
   // Save a new application view in the browser's history.
@@ -157,6 +159,25 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  // Close the sidebar when Escape is pressed.
+  useEffect(() => {
+    if (!sidebarOpen) {
+      return;
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [sidebarOpen]);
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -230,39 +251,23 @@ function App() {
   if (!token) {
     return (
       <main className="login-page">
-        <section className="login-brand-panel">
-          <div className="brand-lockup">
-            <CompanyLogo />
-            <div>
-              <h1>Skipper Limited</h1>
-              <p>Finance Operations</p>
-            </div>
-          </div>
-
-          <div className="brand-message">
-            <p className="eyebrow">CORPORATE FINANCE</p>
-            <h2>Invoice and vendor payment management.</h2>
-            <p>
-              A central workspace for tracking purchase orders, invoices,
-              vendor commitments and outstanding payments.
-            </p>
-          </div>
-
-          <div className="brand-footer">Internal business application</div>
-        </section>
-
         <section className="login-form-panel">
           <div className="login-form-wrap">
-            <div className="mobile-brand">
-              <CompanyLogo />
-              <span>Skipper Limited</span>
+            <div className="login-logo">
+              <img
+                src="/images/skipper-logo.jpg"
+                alt="Skipper Limited Logo"
+              />
+              <h1>Skipper Limited</h1>
+              <p>FINANCE OPERATIONS</p>
             </div>
 
-            <p className="eyebrow">WELCOME BACK</p>
-            <h2>Sign in to your account</h2>
-            <p className="login-description">
-              Enter your company account credentials to continue.
-            </p>
+            <div className="login-heading">
+              <h2>Welcome Back</h2>
+              <p className="login-description">
+                Sign in to your company account to continue.
+              </p>
+            </div>
 
             <form onSubmit={handleLogin}>
               <label htmlFor="username">Username</label>
@@ -539,8 +544,22 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
+    <div className={`app-shell ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
+      {/* Backdrop closes the sidebar when clicked outside it. */}
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="sidebar-overlay"
+          aria-label="Close navigation menu"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        id="app-sidebar"
+        className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}
+        aria-hidden={!sidebarOpen}
+      >
         <div className="brand">
           <CompanyLogo />
           <div>
@@ -559,6 +578,7 @@ function App() {
                 activePage === item.id ? 'active' : ''
               }`}
               href={`#${item.id}`}
+              tabIndex={sidebarOpen ? 0 : -1}
               onClick={(event) => {
                 event.preventDefault();
                 handleNavigation(item.id);
@@ -570,24 +590,44 @@ function App() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-avatar">
-            {(loggedInUser || 'U').slice(0, 1).toUpperCase()}
-          </div>
+  <div className="profile-card">
+    <div className="user-details">
+      <strong>{loggedInUser}</strong>
+    </div>
+  </div>
 
-          <div className="user-details">
-            <strong>{loggedInUser}</strong>
-            <span>{role}</span>
-          </div>
-
-          <button className="logout-button" onClick={handleLogout}>
-            Sign out
-          </button>
-        </div>
+  <button
+    className="logout-button"
+    onClick={handleLogout}
+    type="button"
+  >
+    <span className="logout-icon">↪</span>
+    <span>Sign out</span>
+  </button>
+</div>
       </aside>
 
       <main className="main-content">
         <header className="topbar">
-          <span>Finance Operations / {pageTitle}</span>
+          <div className="topbar-left">
+            <button
+              type="button"
+              className="hamburger-button"
+              aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={sidebarOpen}
+              aria-controls="app-sidebar"
+              onClick={() => setSidebarOpen((open) => !open)}
+            >
+              <span className="hamburger-icon" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            </button>
+
+            <span>Finance Operations / {pageTitle}</span>
+          </div>
+
           <span className="user-role">{role}</span>
         </header>
 

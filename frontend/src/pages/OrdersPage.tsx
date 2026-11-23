@@ -20,6 +20,7 @@ type Order = {
   description?: string | null;
   order_file_path?: string | null;
   approval_file_path?: string | null;
+  approved_by?: string | null;
 };
 
 type Vendor = {
@@ -46,18 +47,24 @@ type OrderImportRow = {
   excel_row: number;
   order_type: "PO" | "SO";
   order_number: string;
+  vendor_name: string;
   vendor_code: string;
+  vendor_status?: "EXISTING" | "NEW" | string;
   budget_name: string;
+  budget_subcategory_name?: string | null;
   financial_year: string;
   order_date: string;
+  approved_by?: string | null;
   order_period?: string | null;
   location?: string | null;
   amount: string;
   description?: string | null;
+  raw_data?: Record<string, unknown>;
   errors: string[];
   is_valid: boolean;
   vendor_id?: number | null;
   budget_id?: number | null;
+  budget_subcategory_id?: number | null;
 };
 
 type OrderImportPreview = {
@@ -65,6 +72,7 @@ type OrderImportPreview = {
   valid_rows: number;
   invalid_rows: number;
   rows: OrderImportRow[];
+  excel_columns?: string[];
 };
 
 type OrderImportResult = {
@@ -237,6 +245,72 @@ function validateDocument(
   return null;
 }
 
+/**
+ * CSV escaping for validation reports.
+ * Prevents commas, quotes and newlines from breaking report columns.
+ */
+function csvCell(value: unknown): string {
+  const text = value == null ? "" : String(value);
+
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Safely retrieve values from the original Excel data.
+ * Supports the current template and the legacy template.
+ */
+function getImportRawValue(
+  row: OrderImportRow,
+  currentHeader: string,
+  legacyHeader?: string,
+): string {
+  const rawData = row.raw_data ?? {};
+
+  const currentValue = rawData[currentHeader];
+
+  if (
+    currentValue !== undefined &&
+    currentValue !== null &&
+    String(currentValue).trim() !== ""
+  ) {
+    return String(currentValue);
+  }
+
+  if (legacyHeader) {
+    const legacyValue = rawData[legacyHeader];
+
+    if (
+      legacyValue !== undefined &&
+      legacyValue !== null &&
+      String(legacyValue).trim() !== ""
+    ) {
+      return String(legacyValue);
+    }
+  }
+
+  return "";
+}
+
+function getImportSubcategory(row: OrderImportRow): string {
+  if (row.order_type === "PO") {
+    return "Not Applicable";
+  }
+
+  return (
+    row.budget_subcategory_name ||
+    getImportRawValue(row, "Subcategory", "OPEX Subcategory") ||
+    "—"
+  );
+}
+
+function getImportApprovedBy(row: OrderImportRow): string {
+  return (
+    row.approved_by ||
+    getImportRawValue(row, "Approved By") ||
+    "—"
+  );
+}
+
 export default function OrdersPage({
   onOpenOrder,
   initialVendorId = null,
@@ -244,12 +318,14 @@ export default function OrdersPage({
   initialCategoryFilter = "ALL",
 }: Props) {
   const [orders, setOrders] = useState<Order[]>([]);
+
   const [importFile, setImportFile] = useState<File | null>(null);
-const [importPreview, setImportPreview] =
-  useState<OrderImportPreview | null>(null);
-const [showImport, setShowImport] = useState(false);
-const [importLoading, setImportLoading] = useState(false);
-const [importConfirming, setImportConfirming] = useState(false);
+  const [importPreview, setImportPreview] =
+    useState<OrderImportPreview | null>(null);
+  const [showImport, setShowImport] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importConfirming, setImportConfirming] = useState(false);
+
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [form, setForm] = useState<OrderForm>(emptyForm);
@@ -568,131 +644,254 @@ const [importConfirming, setImportConfirming] = useState(false);
   }
 
   function resetImport() {
-  setImportFile(null);
-  setImportPreview(null);
-}
-
-async function handleImportPreview() {
-  setError("");
-  setSuccess("");
-
-  if (!importFile) {
-    setError("Select an Excel file first.");
-    return;
+    setImportFile(null);
+    setImportPreview(null);
   }
 
-  if (!importFile.name.toLowerCase().endsWith(".xlsx")) {
-    setError("Please select an Excel .xlsx file.");
-    return;
-  }
+  async function handleDownloadImportTemplate() {
+    setError("");
+    setSuccess("");
 
-  if (importFile.size > 10 * 1024 * 1024) {
-    setError("Excel file must be 10 MB or smaller.");
-    return;
-  }
+    try {
+      const response = await fetch("/api/orders/import/template", {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
 
-  setImportLoading(true);
-  setImportPreview(null);
+      if (!response.ok) {
+        const data = await readResponse(response);
+        throw new Error(
+          getErrorMessage(data as ApiError, "Unable to download Excel template."),
+        );
+      }
 
-  try {
-    const formData = new FormData();
-    formData.append("file", importFile);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
 
-    const response = await fetch("/api/orders/import/preview", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getToken()}`,
-      },
-      body: formData,
-    });
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "orders_import_template.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
-    const data = await readResponse(response);
+      window.URL.revokeObjectURL(downloadUrl);
 
-    if (!response.ok) {
-      throw new Error(
-        getErrorMessage(data as ApiError, "Unable to preview Excel file."),
-      );
-    }
-
-    const preview = data as OrderImportPreview;
-    setImportPreview(preview);
-
-    if (preview.invalid_rows > 0) {
+      setSuccess("Excel import template downloaded successfully.");
+    } catch (err) {
       setError(
-        `${preview.invalid_rows} row(s) need correction. Only a completely valid preview can be imported.`,
+        err instanceof Error
+          ? err.message
+          : "Unable to download Excel template.",
       );
-    } else if (preview.valid_rows > 0) {
-      setSuccess(
-        `Preview complete. All ${preview.valid_rows} order(s) passed validation.`,
-      );
-    } else {
-      setError("The Excel file does not contain any importable order rows.");
     }
-  } catch (err) {
-    setError(
-      err instanceof Error ? err.message : "Unable to preview Excel file.",
+  }
+
+  async function handleImportPreview() {
+    setError("");
+    setSuccess("");
+
+    if (!importFile) {
+      setError("Select an Excel file first.");
+      return;
+    }
+
+    if (!importFile.name.toLowerCase().endsWith(".xlsx")) {
+      setError("Please select an Excel .xlsx file.");
+      return;
+    }
+
+    if (importFile.size > 10 * 1024 * 1024) {
+      setError("Excel file must be 10 MB or smaller.");
+      return;
+    }
+
+    setImportLoading(true);
+    setImportPreview(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+
+      const response = await fetch("/api/orders/import/preview", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: formData,
+      });
+
+      const data = await readResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(data as ApiError, "Unable to preview Excel file."),
+        );
+      }
+
+      const preview = data as OrderImportPreview;
+      setImportPreview(preview);
+
+      if (preview.invalid_rows > 0) {
+        setError(
+          `${preview.invalid_rows} row(s) need correction. Only a completely valid preview can be imported.`,
+        );
+      } else if (preview.valid_rows > 0) {
+        setSuccess(
+          `Preview complete. All ${preview.valid_rows} order(s) passed validation.`,
+        );
+      } else {
+        setError("The Excel file does not contain any importable order rows.");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to preview Excel file.",
+      );
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
+  async function handleConfirmImport() {
+    if (
+      !importPreview ||
+      importPreview.valid_rows === 0 ||
+      importPreview.invalid_rows > 0
+    ) {
+      setError("Please correct all invalid rows before importing.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Import ${importPreview.valid_rows} orders into the Order Register? This will create actual database records.`,
     );
-  } finally {
-    setImportLoading(false);
+
+    if (!confirmed) return;
+
+    setImportConfirming(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("/api/orders/import/confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify(importPreview.rows),
+      });
+
+      const data = await readResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(data as ApiError, "Unable to import orders."),
+        );
+      }
+
+      const result = data as OrderImportResult;
+
+      resetImport();
+      setShowImport(false);
+
+      await loadOrders();
+
+      setSuccess(
+        `${result.created_count} order(s) imported successfully. Order IDs: ${result.created_order_ids.join(", ")}.`,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to import orders.",
+      );
+    } finally {
+      setImportConfirming(false);
+    }
   }
-}
 
-async function handleConfirmImport() {
-  if (
-    !importPreview ||
-    importPreview.valid_rows === 0 ||
-    importPreview.invalid_rows > 0
-  ) {
-    setError("Please correct all invalid rows before importing.");
-    return;
-  }
+  /**
+   * Downloads an Excel-compatible CSV containing only invalid rows.
+   * Includes the original Excel row number and every validation error.
+   */
+  function handleDownloadValidationReport() {
+    if (!importPreview || importPreview.invalid_rows === 0) {
+      setError("There are no invalid rows to download.");
+      return;
+    }
 
-  const confirmed = window.confirm(
-    `Import ${importPreview.valid_rows} orders into the Order Register? This will create actual database records.`,
-  );
+    const invalidRows = importPreview.rows.filter(
+      (row) => !row.is_valid || row.errors.length > 0,
+    );
 
-  if (!confirmed) return;
+    const headers = [
+      "Excel Row",
+      "Order Type",
+      "Order Number",
+      "Vendor Code",
+      "Vendor Name",
+      "Budget Name",
+      "Subcategory",
+      "Financial Year",
+      "Order Date",
+      "Amount",
+      "Approved By",
+      "Order Period",
+      "Location",
+      "Material Description",
+      "Vendor Status",
+      "Validation Errors",
+    ];
 
-  setImportConfirming(true);
-  setError("");
-  setSuccess("");
+    const csvRows = invalidRows.map((row) => [
+      row.excel_row,
+      row.order_type,
+      row.order_number,
+      row.vendor_code,
+      row.vendor_name,
+      row.budget_name,
+      getImportSubcategory(row),
+      row.financial_year,
+      row.order_date,
+      row.amount,
+      getImportApprovedBy(row),
+      row.order_period ?? "",
+      row.location ?? "",
+      row.description ??
+        getImportRawValue(row, "Materials Description", "Description"),
+      row.vendor_status ?? "",
+      row.errors.join(" | "),
+    ]);
 
-  try {
-    const response = await fetch("/api/orders/import/confirm", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getToken()}`,
-      },
-      body: JSON.stringify(importPreview.rows),
+    const csvContent = [
+      headers.map(csvCell).join(","),
+      ...csvRows.map((values) => values.map(csvCell).join(",")),
+    ].join("\r\n");
+
+    // UTF-8 BOM helps Excel correctly display Indian and other Unicode text.
+    const blob = new Blob(["\uFEFF", csvContent], {
+      type: "text/csv;charset=utf-8;",
     });
 
-    const data = await readResponse(response);
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
 
-    if (!response.ok) {
-      throw new Error(
-        getErrorMessage(data as ApiError, "Unable to import orders."),
-      );
-    }
+    const date = new Date().toISOString().slice(0, 10);
 
-    const result = data as OrderImportResult;
+    link.href = downloadUrl;
+    link.download = `orders_validation_report_${date}.csv`;
 
-    resetImport();
-    setShowImport(false);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 
-    await loadOrders();
+    window.URL.revokeObjectURL(downloadUrl);
 
     setSuccess(
-      `${result.created_count} order(s) imported successfully. Order IDs: ${result.created_order_ids.join(", ")}.`,
+      `Validation report downloaded. It contains ${invalidRows.length} invalid row(s) and their error messages.`,
     );
-  } catch (err) {
-    setError(
-      err instanceof Error ? err.message : "Unable to import orders.",
-    );
-  } finally {
-    setImportConfirming(false);
+    setError("");
   }
-}
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1102,27 +1301,29 @@ async function handleConfirmImport() {
         </div>
 
         <div className="orders-heading-actions">
-  <button
-    type="button"
-    className="orders-secondary-button"
-    onClick={() => {
-      setShowImport((current) => !current);
-      resetImport();
-      setError("");
-      setSuccess("");
-    }}
-  >
-    {showImport ? "Close Bulk Import" : "Bulk Import Excel"}
-  </button>
+          <button
+            type="button"
+            className="orders-secondary-button"
+            onClick={() => {
+              setShowImport((current) => !current);
+              resetImport();
+              setError("");
+              setSuccess("");
+            }}
+          >
+            {showImport ? "Close Bulk Import" : "Bulk Import Excel"}
+          </button>
 
-  <button
-    type="button"
-    className="orders-primary-button"
-    onClick={startCreate}
-  >
-    {showForm && editingOrderId === null ? "Close Form" : "+ Create Order"}
-  </button>
-</div>
+          <button
+            type="button"
+            className="orders-primary-button"
+            onClick={startCreate}
+          >
+            {showForm && editingOrderId === null
+              ? "Close Form"
+              : "+ Create Order"}
+          </button>
+        </div>
       </div>
 
       {initialVendorId !== null && (
@@ -1145,168 +1346,262 @@ async function handleConfirmImport() {
         </div>
       )}
 
-
+      {/* BULK IMPORT SECTION */}
       {showImport && (
-  <div className="orders-import-panel">
-    <div className="orders-import-heading">
-      <div>
-        <h2>Bulk Import Orders</h2>
-        <p>
-          Upload an Excel workbook to validate and import multiple
-          purchase and service orders.
-        </p>
-      </div>
-    </div>
+        <div className="orders-import-panel">
+          <div className="orders-import-heading">
+            <div>
+              <h2>Bulk Import Orders</h2>
+              <p>
+                Upload an Excel workbook to validate and import multiple
+                purchase and service orders.
+              </p>
+            </div>
 
-    <div className="orders-import-upload">
-      <label>
-        Select Excel Workbook (.xlsx)
-        <input
-          type="file"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          disabled={importLoading || importConfirming}
-          onChange={(event) => {
-            setImportFile(event.currentTarget.files?.[0] ?? null);
-            setImportPreview(null);
-            setError("");
-            setSuccess("");
-          }}
-        />
-      </label>
+            <button
+              type="button"
+              className="orders-secondary-button"
+              onClick={() => void handleDownloadImportTemplate()}
+            >
+              <span>↓</span> Download Excel Template
+            </button>
+          </div>
 
-      {importFile && (
-        <p className="orders-import-file">
-          Selected file: <strong>{importFile.name}</strong>
-        </p>
+          <div className="orders-import-upload">
+            <label>
+              Select Excel Workbook (.xlsx)
+              <input
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                disabled={importLoading || importConfirming}
+                onChange={(event) => {
+                  setImportFile(event.currentTarget.files?.[0] ?? null);
+                  setImportPreview(null);
+                  setError("");
+                  setSuccess("");
+                }}
+              />
+            </label>
+
+            {importFile && (
+              <p className="orders-import-file">
+                Selected file: <strong>{importFile.name}</strong>
+              </p>
+            )}
+
+            <div className="orders-form-actions">
+              <button
+                type="button"
+                className="orders-secondary-button"
+                onClick={resetImport}
+                disabled={importLoading || importConfirming}
+              >
+                Clear
+              </button>
+
+              <button
+                type="button"
+                className="orders-primary-button"
+                onClick={() => void handleImportPreview()}
+                disabled={!importFile || importLoading || importConfirming}
+              >
+                {importLoading ? "Validating..." : "Preview Excel"}
+              </button>
+            </div>
+          </div>
+
+          {importPreview && (
+            <div className="orders-import-results">
+              <h3>Import Preview</h3>
+
+              <div className="orders-import-summary">
+                <div>
+                  <span>Total Rows</span>
+                  <strong>{importPreview.total_rows}</strong>
+                </div>
+
+                <div>
+                  <span>Valid Rows</span>
+                  <strong>{importPreview.valid_rows}</strong>
+                </div>
+
+                <div>
+                  <span>Invalid Rows</span>
+                  <strong>{importPreview.invalid_rows}</strong>
+                </div>
+              </div>
+
+              {/* VALIDATION REPORT DOWNLOAD */}
+              {importPreview.invalid_rows > 0 && (
+                <div className="orders-import-report-actions">
+                  <button
+                    type="button"
+                    className="orders-secondary-button"
+                    onClick={handleDownloadValidationReport}
+                    disabled={importLoading || importConfirming}
+                  >
+                    ↓ Download Validation Report
+                  </button>
+
+                  <small>
+                    Download invalid rows with their validation errors in a
+                    CSV file that can be opened in Excel.
+                  </small>
+                </div>
+              )}
+
+              <div className="orders-table-wrapper">
+                <table className="orders-table orders-import-table">
+                  <thead>
+                    <tr>
+                      <th>Excel Row</th>
+                      <th>Order No.</th>
+                      <th>Type</th>
+                      <th>Vendor Code</th>
+                      <th>Vendor Name</th>
+                      <th>Material Description</th>
+                      <th>Vendor Status</th>
+                      <th>Budget</th>
+                      <th>Subcategory</th>
+                      <th>Financial Year</th>
+                      <th>Order Date</th>
+                      <th>Order Period</th>
+                      <th>Location</th>
+                      <th>Amount</th>
+                      <th>Approved By</th>
+                      <th>Validation</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {importPreview.rows.map((row) => (
+                      <tr key={row.excel_row}>
+                        <td>{row.excel_row}</td>
+
+                        <td>{row.order_number || "—"}</td>
+
+                        <td>
+                          <span className="orders-type-badge">
+                            {row.order_type}
+                          </span>
+                        </td>
+
+                        <td>
+                          <strong>{row.vendor_code || "—"}</strong>
+                        </td>
+
+                        <td>{row.vendor_name || "—"}</td>
+
+                        <td>
+                          <div
+                            className="orders-import-description"
+                            title={row.description || "No description"}
+                          >
+                            {row.description ||
+                              getImportRawValue(
+                                row,
+                                "Materials Description",
+                                "Description",
+                              ) ||
+                              "—"}
+                          </div>
+                        </td>
+
+                        <td>
+                          {row.vendor_status === "NEW" ? (
+                            <span className="orders-import-status new-vendor">
+                              New Vendor
+                            </span>
+                          ) : row.vendor_status === "EXISTING" ? (
+                            <span className="orders-import-status existing-vendor">
+                              Existing Vendor
+                            </span>
+                          ) : (
+                            <span className="orders-import-status invalid">
+                              Unknown
+                            </span>
+                          )}
+                        </td>
+
+                        <td>{row.budget_name || "—"}</td>
+
+                        <td>{getImportSubcategory(row)}</td>
+
+                        <td>{row.financial_year || "—"}</td>
+
+                        <td>{row.order_date || "—"}</td>
+
+                        <td>{row.order_period || "—"}</td>
+
+                        <td>{row.location || "—"}</td>
+
+                        <td>{money(row.amount || 0)}</td>
+
+                        <td>{getImportApprovedBy(row)}</td>
+
+                        <td>
+                          <span
+                            className={`orders-import-status ${
+                              row.is_valid ? "valid" : "invalid"
+                            }`}
+                          >
+                            {row.is_valid ? "Valid" : "Invalid"}
+                          </span>
+
+                          {row.errors.length > 0 && (
+                            <ul className="orders-import-errors">
+                              {row.errors.map((message, index) => (
+                                <li key={index}>{message}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="orders-form-actions">
+                <button
+                  type="button"
+                  className="orders-secondary-button"
+                  onClick={resetImport}
+                  disabled={importConfirming}
+                >
+                  Clear Preview
+                </button>
+
+                <button
+                  type="button"
+                  className="orders-primary-button"
+                  onClick={() => void handleConfirmImport()}
+                  disabled={
+                    importPreview.valid_rows === 0 ||
+                    importPreview.invalid_rows > 0 ||
+                    importConfirming
+                  }
+                >
+                  {importConfirming
+                    ? "Importing Orders..."
+                    : `Confirm Import (${importPreview.valid_rows})`}
+                </button>
+              </div>
+
+              {importPreview.invalid_rows > 0 && (
+                <p className="orders-import-warning">
+                  Correct the invalid rows in your Excel file and upload it
+                  again. Import is disabled until every row passes validation.
+                  You can download the validation report above to review all
+                  errors in Excel.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
-      <div className="orders-form-actions">
-        <button
-          type="button"
-          className="orders-secondary-button"
-          onClick={resetImport}
-          disabled={importLoading || importConfirming}
-        >
-          Clear
-        </button>
-
-        <button
-          type="button"
-          className="orders-primary-button"
-          onClick={() => void handleImportPreview()}
-          disabled={!importFile || importLoading || importConfirming}
-        >
-          {importLoading ? "Validating..." : "Preview Excel"}
-        </button>
-      </div>
-    </div>
-
-    {importPreview && (
-      <div className="orders-import-results">
-        <h3>Import Preview</h3>
-
-        <div className="orders-import-summary">
-          <div>
-            <span>Total Rows</span>
-            <strong>{importPreview.total_rows}</strong>
-          </div>
-
-          <div>
-            <span>Valid Rows</span>
-            <strong>{importPreview.valid_rows}</strong>
-          </div>
-
-          <div>
-            <span>Invalid Rows</span>
-            <strong>{importPreview.invalid_rows}</strong>
-          </div>
-        </div>
-
-        <div className="orders-table-wrapper">
-          <table className="orders-table orders-import-table">
-            <thead>
-              <tr>
-                <th>Excel Row</th>
-                <th>Order No.</th>
-                <th>Type</th>
-                <th>Vendor Code</th>
-                <th>Budget</th>
-                <th>Order Date</th>
-                <th>Amount</th>
-                <th>Validation</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {importPreview.rows.map((row) => (
-                <tr key={row.excel_row}>
-                  <td>{row.excel_row}</td>
-                  <td>{row.order_number}</td>
-                  <td>{row.order_type}</td>
-                  <td>{row.vendor_code}</td>
-                  <td>{row.budget_name}</td>
-                  <td>{row.order_date}</td>
-                  <td>{money(row.amount)}</td>
-                  <td>
-                    <span
-                      className={`orders-import-status ${
-                        row.is_valid ? "valid" : "invalid"
-                      }`}
-                    >
-                      {row.is_valid ? "Valid" : "Invalid"}
-                    </span>
-
-                    {row.errors.length > 0 && (
-                      <ul className="orders-import-errors">
-                        {row.errors.map((message, index) => (
-                          <li key={index}>{message}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="orders-form-actions">
-          <button
-            type="button"
-            className="orders-secondary-button"
-            onClick={resetImport}
-            disabled={importConfirming}
-          >
-            Clear Preview
-          </button>
-
-          <button
-            type="button"
-            className="orders-primary-button"
-            onClick={() => void handleConfirmImport()}
-            disabled={
-              importPreview.valid_rows === 0 ||
-              importPreview.invalid_rows > 0 ||
-              importConfirming
-            }
-          >
-            {importConfirming
-              ? "Importing Orders..."
-              : `Confirm Import (${importPreview.valid_rows})`}
-          </button>
-        </div>
-
-        {importPreview.invalid_rows > 0 && (
-          <p className="orders-import-warning">
-            Correct the invalid rows in your Excel file and upload it again.
-            Import is disabled until every row passes validation.
-          </p>
-        )}
-      </div>
-    )}
-  </div>
-)}
-
+      {/* EXISTING ORDER SUMMARY */}
       <div className="orders-summary">
         <article className="orders-summary-card">
           <span>
@@ -1337,6 +1632,7 @@ async function handleConfirmImport() {
         </article>
       </div>
 
+      {/* EXISTING ORDER REGISTER */}
       <div className="orders-list-card">
         <div className="orders-list-heading">
           <div>
@@ -1379,17 +1675,19 @@ async function handleConfirmImport() {
           <div className="orders-table-wrapper">
             <table className="orders-table">
               <thead>
-                <tr>
-                  <th>Order No.</th>
-                  <th>Type</th>
-                  <th>Vendor</th>
-                  <th>Budget</th>
-                  <th>Order Date</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+  <tr>
+    <th>Order No.</th>
+    <th>Type</th>
+    <th>Vendor</th>
+    <th>Material Description</th>
+    <th>Budget</th>
+    <th>Approved By</th>
+    <th>Order Date</th>
+    <th>Amount</th>
+    <th>Status</th>
+    <th>Actions</th>
+  </tr>
+</thead>
 
               <tbody>
                 {filteredOrders.map((order) => {
@@ -1448,13 +1746,25 @@ async function handleConfirmImport() {
                       </td>
 
                       <td>
-                        {budget?.name ??
-                          order.budget_name ??
-                          order.budget_id ??
-                          "—"}
+                        <div
+                          className="orders-register-description"
+                          title={order.description || "No material description"}
+                        >
+                          {order.description || "—"}
+                        </div>
                       </td>
 
-                      <td>{String(order.order_date).slice(0, 10)}</td>
+                      <td>
+  {budget?.name ??
+    order.budget_name ??
+    order.budget_id ??
+    "—"}
+</td>
+
+<td>{order.approved_by || "—"}</td>
+
+<td>{String(order.order_date).slice(0, 10)}</td>
+
                       <td>{money(order.amount)}</td>
 
                       <td>
@@ -1494,7 +1804,9 @@ async function handleConfirmImport() {
                               }
                             >
                               Documents
-                              <span className="orders-document-chevron">▾</span>
+                              <span className="orders-document-chevron">
+                                ▾
+                              </span>
                             </button>
 
                             {openDocumentMenuId === order.id && (
@@ -1624,7 +1936,7 @@ async function handleConfirmImport() {
 
                 {filteredOrders.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="orders-empty">
+                    <td colSpan={10} className="orders-empty">
                       {search ||
                       initialVendorId !== null ||
                       categoryFilter !== "ALL"
@@ -1639,6 +1951,7 @@ async function handleConfirmImport() {
         )}
       </div>
 
+      {/* EXISTING CREATE / EDIT ORDER FORM */}
       {showForm && (
         <form className="orders-form" onSubmit={handleSubmit}>
           <h2>{editingOrderId !== null ? "Edit Order" : "Create Order"}</h2>
@@ -1792,11 +2105,13 @@ async function handleConfirmImport() {
                 onChange={(event) => handleLocationChange(event.target.value)}
               >
                 <option value="">Select location</option>
+
                 {OFFICIAL_LOCATIONS.map((location) => (
                   <option key={location} value={location}>
                     {location}
                   </option>
                 ))}
+
                 <option value={OTHER_LOCATION}>Others</option>
               </select>
             </label>
@@ -1847,6 +2162,7 @@ async function handleConfirmImport() {
             </label>
           </div>
 
+          {/* EXISTING DOCUMENT UPLOAD SECTION */}
           <div className="orders-document-upload-section">
             <div>
               <h3>Order Documents</h3>
@@ -1884,6 +2200,7 @@ async function handleConfirmImport() {
                   }}
                   disabled={saving}
                 />
+
                 {orderCopyFile && (
                   <span className="orders-selected-document">
                     Selected: {orderCopyFile.name}
@@ -1925,6 +2242,7 @@ async function handleConfirmImport() {
                   }}
                   disabled={saving}
                 />
+
                 {approvalFile && (
                   <span className="orders-selected-document">
                     Selected: {approvalFile.name}
@@ -1941,6 +2259,7 @@ async function handleConfirmImport() {
             </div>
           </div>
 
+          {/* EXISTING ADD VENDOR FORM */}
           {showVendorForm && (
             <div className="orders-inline-vendor">
               <h3>Add New Vendor</h3>

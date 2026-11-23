@@ -1,21 +1,35 @@
-/* =========================================
-   VENDOR MANAGEMENT
-   Skipper Limited · Finance Operations
-   ========================================= */
+
+/* =========================================================
+   SKIPPER LIMITED — VENDOR MANAGEMENT
+   Corporate Finance Operations | Premium Enterprise UI
+========================================================= */
 
 .vendors-page {
+  --vendor-navy: #142d4e;
+  --vendor-navy-dark: #0d2039;
+  --vendor-navy-light: #1e426b;
+  --vendor-teal: #087f8c;
+  --vendor-teal-dark: #066773;
+  --vendor-text: #24384f;
+  --vendor-muted: #718096;
+  --vendor-border: #dce5ef;
+  --vendor-surface: #ffffff;
+  --vendor-soft: #f5f8fc;
+
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
   padding: 8px 4px 28px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  color: #1c2d43;
+  gap: 25px;
+  color: var(--vendor-text);
   box-sizing: border-box;
 }
 
-/* Page header */
+/* =========================================================
+   PAGE HEADER
+========================================================= */
 
 .vendors-page-header {
   display: flex;
@@ -26,27 +40,28 @@
 }
 
 .vendors-eyebrow {
-  margin: 0 0 10px;
-  color: #718096;
+  margin: 0 0 9px;
+  color: var(--vendor-teal);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.6px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
   line-height: 1.4;
+  text-transform: uppercase;
 }
 
 .vendors-page-header h1 {
   margin: 0;
-  color: #172b4d;
-  font-size: clamp(25px, 2vw, 30px);
-  font-weight: 700;
-  letter-spacing: -0.7px;
+  color: var(--vendor-navy-dark);
+  font-size: clamp(26px, 2vw, 31px);
+  font-weight: 750;
+  letter-spacing: -0.85px;
   line-height: 1.3;
 }
 
 .vendors-subtitle {
-  margin: 10px 0 0;
-  color: #748197;
-  font-size: 14px;
+  margin: 9px 0 0;
+  color: #748399;
+  font-size: 13px;
   line-height: 1.7;
 }
 
@@ -55,29 +70,41 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 0 17px;
-  border: 1px solid #d7e0eb;
-  border-radius: 7px;
-  background: #fff;
-  color: #304967;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 8px;
+  min-height: 41px;
+  padding: 0 18px;
+  border: 1px solid #cbd9e8;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff, #f4f8fc);
+  color: var(--vendor-navy);
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease;
+  box-shadow: 0 2px 6px rgb(20 45 78 / 5%);
+  transition: background 180ms ease, border-color 180ms ease,
+    color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .vendors-refresh-button:hover {
-  border-color: #9db3d0;
-  background: #f6f9fd;
+  border-color: var(--vendor-teal);
+  background: var(--vendor-navy);
+  color: #ffffff;
+  box-shadow: 0 5px 13px rgb(20 45 78 / 15%);
+  transform: translateY(-1px);
 }
 
-/* Summary cards */
+.vendors-refresh-button:active {
+  transform: translateY(0);
+}
+
+/* =========================================================
+   SUMMARY CARDS
+========================================================= */
 
 .vendors-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 19px;
 }
 
 .vendors-summary-card {
@@ -86,95 +113,132 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  min-height: 145px;
-  padding: 23px 25px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
+  min-height: 151px;
+  padding: 24px 25px;
+  overflow: hidden;
+  border: 1px solid #dce6f0;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafd 100%);
   box-sizing: border-box;
-  box-shadow: 0 2px 7px rgb(27 49 78 / 3%);
+  box-shadow: 0 3px 11px rgb(20 45 78 / 5%);
+  transition: transform 180ms ease, box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.vendors-summary-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--vendor-navy), var(--vendor-teal));
+}
+
+.vendors-summary-card::after {
+  content: "";
+  position: absolute;
+  right: -35px;
+  bottom: -58px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: rgb(8 127 140 / 4%);
+  pointer-events: none;
+}
+
+.vendors-summary-card:hover {
+  transform: translateY(-3px);
+  border-color: #b9ccdf;
+  box-shadow: 0 9px 22px rgb(20 45 78 / 9%);
 }
 
 .vendors-summary-label {
-  color: #6b7b91;
-  font-size: 13px;
-  font-weight: 500;
+  position: relative;
+  z-index: 1;
+  color: #62758e;
+  font-size: 12px;
+  font-weight: 650;
   line-height: 1.5;
 }
 
 .vendors-summary-card strong {
-  color: #172b4d;
-  font-size: 31px;
-  font-weight: 700;
-  letter-spacing: -0.7px;
+  position: relative;
+  z-index: 1;
+  color: var(--vendor-navy-dark);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 
 .vendors-summary-note {
+  position: relative;
+  z-index: 1;
   margin-top: auto;
-  color: #8995a7;
-  font-size: 12px;
+  color: #8794a7;
+  font-size: 11px;
   line-height: 1.5;
 }
 
-/* Vendor register container */
+/* =========================================================
+   VENDOR REGISTER PANEL
+========================================================= */
 
-.vendors-register {
-  width: 100%;
-  overflow: hidden;
-  border: 1px solid #e0e7ef;
-  border-radius: 11px;
-  background: #fff;
-  box-shadow: 0 3px 12px rgb(27 49 78 / 3%);
-}
+/* Premium dark navy Vendor Register header */
 
 .vendors-register-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 25px 28px;
-  border-bottom: 1px solid #e9eef4;
+  padding: 21px 28px;
+  border-bottom: 3px solid #087f8c;
+  background: linear-gradient(110deg, #102944 0%, #173e65 65%, #1d5274 100%);
 }
 
 .vendors-register-heading h2 {
   margin: 0;
-  color: #1b304c;
-  font-size: 17px;
-  font-weight: 700;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.3px;
   line-height: 1.5;
 }
 
 .vendors-register-heading p {
-  margin: 7px 0 0;
-  color: #7a879a;
+  margin: 6px 0 0;
+  color: #d1e0ee;
   font-size: 12px;
   line-height: 1.6;
 }
 
 .vendors-record-count {
   flex-shrink: 0;
-  padding: 7px 11px;
-  border: 1px solid #e0e7f0;
-  border-radius: 6px;
-  background: #f7f9fc;
-  color: #4b607b;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 8px 13px;
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 12%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 750;
   line-height: 1.4;
   white-space: nowrap;
 }
 
-/* Search and filters */
+
+/* =========================================================
+   SEARCH AND FILTER TOOLBAR
+========================================================= */
 
 .vendors-toolbar {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 19px 28px;
-  border-bottom: 1px solid #e9eef4;
-  background: #fbfcfe;
+  padding: 18px 28px;
+  border-bottom: 1px solid #e4ebf3;
+  background: #f6f9fc;
 }
 
 .vendors-search {
@@ -183,19 +247,19 @@
   flex: 1;
   gap: 11px;
   min-width: 0;
-  min-height: 43px;
+  min-height: 44px;
   padding: 0 14px;
-  border: 1px solid #d9e2ed;
-  border-radius: 7px;
-  background: #fff;
+  border: 1px solid #d2deea;
+  border-radius: 8px;
+  background: #ffffff;
   box-sizing: border-box;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .vendors-search > span {
   flex-shrink: 0;
-  color: #8291a6;
-  font-size: 22px;
+  color: var(--vendor-teal);
+  font-size: 21px;
   line-height: 1;
 }
 
@@ -206,40 +270,69 @@
   border: 0;
   outline: none;
   background: transparent;
-  color: #263950;
+  color: #263b54;
   font-family: inherit;
   font-size: 13px;
   line-height: 1.5;
 }
 
 .vendors-search input::placeholder {
-  color: #9aa5b5;
+  color: #9aa7b7;
 }
 
 .vendors-search:focus-within {
-  border-color: #7d9fc9;
-  box-shadow: 0 0 0 3px rgb(66 113 174 / 9%);
+  border-color: var(--vendor-teal);
+  box-shadow: 0 0 0 3px rgb(8 127 140 / 10%);
 }
 
 .vendors-toolbar select {
   flex-shrink: 0;
-  min-width: 160px;
-  min-height: 43px;
-  padding: 0 34px 0 13px;
-  border: 1px solid #d9e2ed;
-  border-radius: 7px;
-  background-color: #fff;
-  color: #394c65;
+  min-width: 165px;
+  min-height: 44px;
+  padding: 0 35px 0 13px;
+  border: 1px solid #d2deea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #344b66;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
-/* Vendor table */
+.vendors-toolbar select:hover {
+  border-color: #9bb4cc;
+}
+
+.vendors-toolbar select:focus {
+  outline: none;
+  border-color: var(--vendor-teal);
+  box-shadow: 0 0 0 3px rgb(8 127 140 / 10%);
+}
+
+/* =========================================================
+   VENDOR TABLE
+========================================================= */
 
 .vendors-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #b9c9da #f3f6fa;
+}
+
+.vendors-table-wrapper::-webkit-scrollbar {
+  height: 7px;
+}
+
+.vendors-table-wrapper::-webkit-scrollbar-track {
+  background: #f3f6fa;
+}
+
+.vendors-table-wrapper::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #b9c9da;
 }
 
 .vendors-table {
@@ -250,43 +343,50 @@
 }
 
 .vendors-table thead {
-  background: #f7f9fc;
+  background: linear-gradient(180deg, #f0f5fa, #eaf0f7);
 }
 
 .vendors-table th {
-  padding: 15px 22px;
-  border-bottom: 1px solid #e5ebf2;
-  color: #66768c;
+  padding: 16px 22px;
+  border-bottom: 1px solid #dce5ef;
+  color: #435a76;
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
   line-height: 1.5;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .vendors-table td {
-  padding: 19px 22px;
-  border-bottom: 1px solid #edf1f6;
-  color: #4b5d74;
+  padding: 20px 22px;
+  border-bottom: 1px solid #e9eef4;
+  color: #4b5e75;
   font-size: 12px;
   line-height: 1.6;
   vertical-align: middle;
+}
+
+.vendors-table tbody tr {
+  background: #ffffff;
+  transition: background 150ms ease;
+}
+
+.vendors-table tbody tr:nth-child(even) {
+  background: #fbfcfe;
+}
+
+.vendors-table tbody tr:hover {
+  background: #f0f7fa;
 }
 
 .vendors-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.vendors-table tbody tr {
-  transition: background 140ms ease;
-}
-
-.vendors-table tbody tr:hover {
-  background: #f9fbfe;
-}
-
-/* Vendor identity */
+/* =========================================================
+   VENDOR IDENTITY
+========================================================= */
 
 .vendor-name-cell {
   display: flex;
@@ -297,16 +397,17 @@
 
 .vendor-avatar {
   display: grid;
-  flex: 0 0 39px;
-  width: 39px;
-  height: 39px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border: 1px solid #dce6f3;
-  border-radius: 9px;
-  background: #eff4fb;
-  color: #315b8c;
+  border: 1px solid #d1e1ed;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #eaf2fa, #dceaf5);
+  color: var(--vendor-navy);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgb(49 91 140 / 4%);
 }
 
 .vendor-name-cell > div {
@@ -317,91 +418,119 @@
 }
 
 .vendor-name-cell strong {
-  color: #273b55;
-  font-size: 12px;
-  font-weight: 600;
+  color: #203650;
+  font-size: 13px;
+  font-weight: 700;
   line-height: 1.5;
 }
 
 .vendor-name-cell > div > span {
-  color: #8b97a8;
+  color: #8996a8;
   font-size: 11px;
   line-height: 1.4;
 }
 
-/* Vendor code */
+/* =========================================================
+   VENDOR CODE
+========================================================= */
 
 .vendor-code {
   display: inline-block;
-  padding: 6px 9px;
-  border: 1px solid #e0e7f0;
-  border-radius: 5px;
-  background: #f7f9fc;
-  color: #455b77;
+  padding: 6px 10px;
+  border: 1px solid #d7e3ef;
+  border-radius: 6px;
+  background: #f0f5fa;
+  color: #365779;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 750;
+  letter-spacing: 0.2px;
   line-height: 1.4;
   white-space: nowrap;
 }
 
-/* Contact details */
+/* =========================================================
+   CONTACT DETAILS
+========================================================= */
 
 .vendor-contact-cell {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   min-width: 170px;
 }
 
 .vendor-contact-cell span {
-  color: #56677e;
+  color: #566980;
   font-size: 12px;
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+
+.vendor-contact-cell span:first-child {
+  color: #344b65;
+  font-weight: 600;
+}
+
+.vendor-contact-cell span:last-child {
+  color: #8291a5;
+  font-size: 11px;
+  font-weight: 400;
 }
 
 .vendor-address {
   min-width: 150px;
   max-width: 260px;
-  color: #69788d;
+  color: #687a90;
   line-height: 1.8 !important;
   overflow-wrap: anywhere;
 }
 
-/* Account status */
+/* =========================================================
+   ACCOUNT STATUS
+========================================================= */
 
 .vendor-status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 7px 10px;
+  padding: 7px 12px;
+  border: 1px solid transparent;
   border-radius: 20px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 750;
   line-height: 1.3;
   white-space: nowrap;
 }
 
 .vendor-status-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   flex-shrink: 0;
   border-radius: 50%;
   background: currentColor;
+  box-shadow: 0 0 0 3px rgb(40 119 73 / 9%);
 }
 
 .vendor-status.is-active {
-  background: #eaf6ee;
-  color: #287749;
+  border-color: #cce6d5;
+  background: #e8f5ed;
+  color: #247344;
 }
 
 .vendor-status.is-inactive {
-  background: #f0f2f5;
-  color: #697688;
+  border-color: #e0e5eb;
+  background: #f1f3f6;
+  color: #657386;
 }
 
-/* Loading, empty and error states */
+.vendor-status.is-inactive .vendor-status-dot {
+  box-shadow: 0 0 0 3px rgb(101 115 134 / 9%);
+}
+
+/* =========================================================
+   LOADING, EMPTY AND ERROR STATES
+========================================================= */
 
 .vendors-state {
   display: flex;
@@ -419,9 +548,9 @@
 }
 
 .vendors-state strong {
-  color: #2a3e58;
+  color: var(--vendor-navy);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 750;
 }
 
 .vendors-state p {
@@ -434,8 +563,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 28px;
-  background: #fff7f6;
+  padding: 19px 28px;
+  border-top: 1px solid #f1d8d5;
+  border-bottom: 1px solid #f1d8d5;
+  background: #fff5f3;
   color: #a2342d;
   font-size: 13px;
   line-height: 1.6;
@@ -447,21 +578,25 @@
 
 .vendors-error button {
   flex-shrink: 0;
-  padding: 8px 13px;
-  border: 1px solid #e7b9b5;
-  border-radius: 6px;
-  background: #fff;
+  padding: 8px 14px;
+  border: 1px solid #e4b4ae;
+  border-radius: 7px;
+  background: #ffffff;
   color: #a2342d;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 
 .vendors-error button:hover {
-  background: #fff0ee;
+  border-color: #ce8f87;
+  background: #ffebe8;
 }
 
-/* Register footer */
+/* =========================================================
+   REGISTER FOOTER
+========================================================= */
 
 .vendors-register-footer {
   display: flex;
@@ -469,22 +604,41 @@
   justify-content: space-between;
   gap: 16px;
   padding: 15px 28px;
-  border-top: 1px solid #e9eef4;
-  background: #fbfcfe;
-  color: #8793a5;
+  border-top: 1px solid #e1e9f1;
+  background: #f5f8fc;
+  color: #75869b;
   font-size: 11px;
   line-height: 1.5;
 }
 
-/* Responsive layouts */
+/* =========================================================
+   ACCESSIBILITY AND FOCUS
+========================================================= */
+
+.vendors-page button:focus-visible,
+.vendors-page input:focus-visible,
+.vendors-page select:focus-visible {
+  outline: 3px solid rgb(8 127 140 / 22%);
+  outline-offset: 2px;
+}
+
+.vendors-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================================================
+   LARGE DESKTOP
+========================================================= */
 
 @media (min-width: 1400px) {
   .vendors-page {
-    gap: 30px;
+    gap: 28px;
   }
 
   .vendors-summary-card {
-    min-height: 155px;
+    min-height: 158px;
     padding: 26px 28px;
   }
 
@@ -494,9 +648,13 @@
   }
 
   .vendors-table td {
-    padding: 21px 25px;
+    padding: 22px 25px;
   }
 }
+
+/* =========================================================
+   TABLET
+========================================================= */
 
 @media (max-width: 1000px) {
   .vendors-page {
@@ -524,6 +682,10 @@
   }
 }
 
+/* =========================================================
+   MOBILE
+========================================================= */
+
 @media (max-width: 700px) {
   .vendors-page {
     gap: 20px;
@@ -533,7 +695,7 @@
   .vendors-page-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 16px;
+    gap: 15px;
   }
 
   .vendors-page-header h1 {
@@ -546,7 +708,7 @@
   }
 
   .vendors-refresh-button {
-    min-height: 38px;
+    min-height: 39px;
   }
 
   .vendors-summary-grid {
@@ -555,22 +717,30 @@
   }
 
   .vendors-summary-card {
-    min-height: auto;
+    min-height: 125px;
     gap: 8px;
-    padding: 17px 19px;
+    padding: 18px 19px;
   }
 
   .vendors-summary-card strong {
-    font-size: 25px;
+    font-size: 29px;
   }
 
   .vendors-summary-note {
     margin-top: 0;
   }
 
+  .vendors-register {
+    border-radius: 10px;
+  }
+
   .vendors-register-heading {
     align-items: flex-start;
     padding: 19px 17px;
+  }
+
+  .vendors-register-heading h2 {
+    font-size: 16px;
   }
 
   .vendors-toolbar {
@@ -579,6 +749,7 @@
     padding: 15px 17px;
   }
 
+  .vendors-search,
   .vendors-toolbar select {
     width: 100%;
   }
@@ -606,193 +777,40 @@
   }
 }
 
-/* =========================================
-   VENDOR PAGE — VISUAL REFINEMENTS
-   ========================================= */
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
 
-/* More balanced page spacing */
-.vendors-page {
-  gap: 24px;
+@media (max-width: 420px) {
+  .vendors-page-header h1 {
+    font-size: 23px;
+  }
+
+  .vendors-summary-card strong {
+    font-size: 26px;
+  }
+
+  .vendors-record-count {
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+
+  .vendors-register-heading {
+    gap: 10px;
+  }
 }
 
-/* Refined page heading */
-.vendors-page-header h1 {
-  letter-spacing: -0.9px;
-}
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
 
-.vendors-eyebrow {
-  color: #526b8b;
-}
-
-/* Refresh button */
-.vendors-refresh-button {
-  gap: 8px;
-  box-shadow: 0 2px 5px rgb(27 49 78 / 4%);
-}
-
-.vendors-refresh-button:active {
-  transform: translateY(1px);
-}
-
-/* Summary cards */
-.vendors-summary-card {
-  min-height: 150px;
-  border-radius: 12px;
-  box-shadow: 0 3px 10px rgb(27 49 78 / 4%);
-  transition: transform 180ms ease, box-shadow 180ms ease,
-    border-color 180ms ease;
-}
-
-.vendors-summary-card:hover {
-  transform: translateY(-2px);
-  border-color: #d2deed;
-  box-shadow: 0 7px 18px rgb(27 49 78 / 7%);
-}
-
-.vendors-summary-card strong {
-  font-size: 34px;
-}
-
-/* Register panel */
-.vendors-register {
-  border-color: #dce5ef;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgb(27 49 78 / 4%);
-}
-
-/* Register heading */
-.vendors-register-heading {
-  padding-top: 23px;
-  padding-bottom: 23px;
-}
-
-.vendors-register-heading h2 {
-  font-size: 18px;
-  letter-spacing: -0.3px;
-}
-
-/* Search toolbar */
-.vendors-toolbar {
-  background: #f8fafd;
-}
-
-.vendors-search,
-.vendors-toolbar select {
-  border-color: #d5dfeb;
-  border-radius: 8px;
-}
-
-.vendors-toolbar select:focus {
-  outline: none;
-  border-color: #7d9fc9;
-  box-shadow: 0 0 0 3px rgb(66 113 174 / 9%);
-}
-
-/* Table refinement */
-.vendors-table {
-  border-spacing: 0;
-}
-
-.vendors-table thead {
-  background: #f2f5fa;
-}
-
-.vendors-table th {
-  padding-top: 16px;
-  padding-bottom: 16px;
-  color: #52647c;
-  font-size: 10px;
-  letter-spacing: 0.9px;
-}
-
-.vendors-table td {
-  padding-top: 21px;
-  padding-bottom: 21px;
-}
-
-.vendors-table tbody tr:hover {
-  background: #f5f8fc;
-}
-
-/* Vendor name */
-.vendor-name-cell {
-  gap: 14px;
-}
-
-.vendor-avatar {
-  border-radius: 10px;
-  background: linear-gradient(145deg, #edf3fb, #e3ecf8);
-  color: #244f83;
-  box-shadow: inset 0 0 0 1px rgb(49 91 140 / 4%);
-}
-
-.vendor-name-cell strong {
-  color: #203650;
-  font-size: 13px;
-}
-
-/* Vendor code */
-.vendor-code {
-  background: #f2f6fb;
-  border-color: #dce5f0;
-  color: #365578;
-  font-size: 11px;
-  letter-spacing: 0.2px;
-}
-
-/* Contact details */
-.vendor-contact-cell {
-  gap: 6px;
-}
-
-.vendor-contact-cell span:first-child {
-  color: #344c68;
-  font-weight: 500;
-}
-
-.vendor-contact-cell span:last-child {
-  color: #8190a4;
-  font-size: 11px;
-}
-
-/* Status labels */
-.vendor-status {
-  padding: 7px 12px;
-  border: 1px solid transparent;
-}
-
-.vendor-status.is-active {
-  border-color: #d5eadc;
-  background: #edf7f0;
-  color: #287749;
-}
-
-.vendor-status.is-inactive {
-  border-color: #e2e6eb;
-  background: #f4f5f7;
-  color: #697688;
-}
-
-/* Footer */
-.vendors-register-footer {
-  background: #f8fafd;
-  color: #78879b;
-}
-
-/* Smooth focus visibility */
-.vendors-page button:focus-visible,
-.vendors-page input:focus-visible,
-.vendors-page select:focus-visible {
-  outline: 3px solid rgb(39 91 151 / 18%);
-  outline-offset: 2px;
-}
-
-/* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .vendors-page *,
   .vendors-page *::before,
   .vendors-page *::after {
+    scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

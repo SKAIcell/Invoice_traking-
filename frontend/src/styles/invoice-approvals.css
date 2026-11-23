@@ -1,415 +1,371 @@
-/* ==========================================
-   SKIPPER LIMITED — INVOICE APPROVALS
+
+/* =========================================================
+   SKIPPER LIMITED — PENDING INVOICE APPROVALS
    Corporate Finance Operations
-   ========================================== */
+   Premium Navy & Teal Enterprise Theme
+   ========================================================= */
 
 .invoice-approvals-panel {
-  --approval-primary: #173f70;
-  --approval-primary-dark: #102f55;
-  --approval-border: #e2e8f0;
+  --approval-primary: #142d4e;
+  --approval-primary-dark: #0c2039;
+  --approval-teal: #087f8c;
+  --approval-teal-dark: #06636e;
+  --approval-border: #d8e1eb;
   --approval-muted: #64748b;
-  --approval-text: #1e293b;
+  --approval-text: #1b2c40;
 
   width: 100%;
-  margin: 28px 0;
+  margin-bottom: 24px;
+  overflow: hidden;
   color: var(--approval-text);
-  font-family: inherit;
+  background: #ffffff;
+  border: 1px solid var(--approval-border);
+  border-top: 4px solid var(--approval-teal);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(20, 45, 78, 0.055);
 }
+
+.invoice-approvals-panel,
+.invoice-approvals-panel * {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   PANEL HEADER
+   ========================================================= */
 
 .invoice-approvals-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
+  padding: 23px 25px;
+  background:
+    linear-gradient(
+      110deg,
+      #ffffff 0%,
+      #f4f8fc 100%
+    );
+  border-bottom: 1px solid var(--approval-border);
 }
 
-.invoice-approvals-header h2 {
+.invoice-approvals-header .eyebrow {
+  margin: 0 0 7px;
+  color: var(--approval-teal);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 1.5px;
+}
+
+.invoice-approvals-header h2,
+.invoice-approvals-header h3 {
   margin: 0;
-  color: #142f50;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.4px;
+  color: var(--approval-primary);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.25px;
 }
 
-.invoice-approvals-header p {
-  margin: 6px 0 0;
+.invoice-approvals-header p:not(.eyebrow) {
+  margin: 7px 0 0;
   color: var(--approval-muted);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.55;
 }
+
+.invoice-approvals-header button {
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   SEARCH TOOLBAR
+   ========================================================= */
 
 .invoice-approval-toolbar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
+  gap: 18px;
+  padding: 17px 24px;
+  background: #f7f9fc;
+  border-bottom: 1px solid #e8edf3;
 }
 
-/* Approval search — refined styling */
+.invoice-approval-search-group {
+  display: flex;
+  width: min(440px, 100%);
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invoice-approval-search-label {
+  color: #2a4059;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.35px;
+}
 
 .invoice-approval-search {
-  display: flex;
-  align-items: center;
   width: 100%;
-  max-width: 420px;
-  min-width: 260px;
-  height: 46px;
-  padding: 0 14px;
-  box-sizing: border-box;
-  border: 1px solid #d7e0eb;
-  border-radius: 9px;
+  min-height: 42px;
+  padding: 10px 14px;
+  color: var(--approval-text);
   background: #ffffff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* If the class is directly applied to the input */
-input.invoice-approval-search {
-  display: block;
-  width: 100%;
-  max-width: 420px;
-  min-width: 260px;
-  height: 46px;
-  padding: 0 14px;
-  box-sizing: border-box;
-  border: 1px solid #d7e0eb;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #24364b;
-  font-family: inherit;
-  font-size: 14px;
+  border: 1px solid #cbd6e2;
+  border-radius: 7px;
   outline: none;
-  box-shadow: none;
-}
-
-/* Search input inside a wrapper */
-.invoice-approval-search input {
-  flex: 1;
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  padding: 0;
-  border: none;
-  outline: none;
-  box-shadow: none;
-  background: transparent;
-  color: #24364b;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.invoice-approval-search input:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-.invoice-approval-search:focus-within,
-input.invoice-approval-search:focus {
-  border-color: #4779ad;
-  box-shadow: 0 0 0 3px rgba(71, 121, 173, 0.12);
-}
-
-.invoice-approval-search::placeholder,
-.invoice-approval-search input::placeholder {
-  color: #94a3b8;
+  font-size: 12px;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .invoice-approval-search::placeholder {
-  color: #94a3b8;
+  color: #99a6b5;
 }
 
 .invoice-approval-search:focus {
-  border-color: #315f91;
-  box-shadow: 0 0 0 3px rgba(49, 95, 145, 0.12);
+  border-color: var(--approval-teal);
+  box-shadow: 0 0 0 3px rgba(8, 127, 140, 0.14);
 }
 
-.invoice-approval-overview {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.invoice-approval-stat {
-  position: relative;
-  overflow: hidden;
-  padding: 19px 20px;
-  border: 1px solid var(--approval-border);
-  border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.035);
-}
-
-.invoice-approval-stat::before {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--approval-primary);
-  content: "";
-}
-
-.invoice-approval-stat span {
-  display: block;
-  margin-bottom: 8px;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.35px;
-  text-transform: uppercase;
-}
-
-.invoice-approval-stat strong {
-  display: block;
-  color: #173f70;
-  font-size: 27px;
-  font-weight: 700;
-  line-height: 1.2;
-}
+/* =========================================================
+   APPROVAL SECTION
+   ========================================================= */
 
 .invoice-approval-section {
-  margin-bottom: 24px;
-  overflow: hidden;
-  border: 1px solid var(--approval-border);
-  border-radius: 10px;
+  width: 100%;
   background: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.035);
 }
 
 .invoice-approval-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 17px 20px;
-  border-bottom: 1px solid var(--approval-border);
-  background: #f8fafc;
+  gap: 16px;
+  padding: 18px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8edf3;
 }
 
-.invoice-approval-section-header h3 {
+.invoice-approval-section-header h3,
+.invoice-approval-section-header h4 {
   margin: 0;
-  color: #1e293b;
+  color: var(--approval-primary);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
 }
+
+.invoice-approval-section-header p {
+  margin: 6px 0 0;
+  color: var(--approval-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   PENDING REQUEST COUNT
+   ========================================================= */
 
 .invoice-approval-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  padding: 4px 9px;
-  border-radius: 20px;
-  background: #e2e8f0;
-  color: #334155;
+  flex-shrink: 0;
+  min-width: 34px;
+  height: 31px;
+  padding: 0 10px;
+  color: #ffffff;
+  background: var(--approval-teal);
+  border: 1px solid var(--approval-teal);
+  border-radius: 18px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 850;
 }
 
 .invoice-approval-count-pending {
-  background: #fff1d6;
-  color: #9a5800;
+  color: #ffffff;
+  background: #bd8126;
+  border-color: #bd8126;
 }
 
 .invoice-approval-count-approved {
-  background: #dcfce7;
-  color: #166534;
+  color: #ffffff;
+  background: #16805d;
+  border-color: #16805d;
 }
 
 .invoice-approval-count-rejected {
-  background: #fee2e2;
-  color: #991b1b;
+  color: #ffffff;
+  background: #bd3e49;
+  border-color: #bd3e49;
 }
+
+/* =========================================================
+   APPROVAL TABLE
+   ========================================================= */
 
 .invoice-approval-table-wrapper {
   width: 100%;
   overflow-x: auto;
-  overscroll-behavior-x: contain;
+  background: #ffffff;
+  scrollbar-color: #a9b9ca #f0f3f7;
+  scrollbar-width: thin;
 }
 
 .invoice-approval-table {
   width: 100%;
-  min-width: 1050px;
+  min-width: 1100px;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 13px;
+  color: var(--approval-text);
+  font-size: 12px;
 }
 
-.invoice-approval-table thead th {
+.invoice-approval-table th {
   position: sticky;
   top: 0;
-  z-index: 1;
-  padding: 13px 15px;
-  border-bottom: 1px solid #dbe3ed;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.45px;
+  z-index: 2;
+  padding: 14px 13px;
+  color: #ffffff;
+  background: var(--approval-primary);
+  border-right: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 2px solid var(--approval-teal);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.invoice-approval-table tbody td {
-  padding: 14px 15px;
-  border-bottom: 1px solid #edf1f5;
-  color: #334155;
+.invoice-approval-table td {
+  padding: 14px 13px;
+  color: #34465b;
+  background: #ffffff;
+  border-bottom: 1px solid #e9eef4;
+  font-size: 11px;
   vertical-align: middle;
-  line-height: 1.5;
-}
-
-.invoice-approval-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.invoice-approval-table tbody tr {
-  transition: background-color 0.15s ease;
-}
-
-.invoice-approval-table tbody tr:hover {
-  background: #f8fbff;
-}
-
-.invoice-approval-table tbody td:first-child {
-  color: #173f70;
-  font-weight: 700;
   white-space: nowrap;
 }
 
-.invoice-approval-table tbody td:nth-child(2),
-.invoice-approval-table tbody td:nth-child(3) {
-  font-weight: 600;
+.invoice-approval-table tbody tr:nth-child(even) td {
+  background: #f7f9fc;
 }
 
-.invoice-approval-table tbody td:nth-child(4) {
-  color: #475569;
-  font-weight: 600;
-  white-space: nowrap;
+.invoice-approval-table tbody tr:hover td {
+  background: #edf6f8;
 }
+
+.invoice-approval-table td strong {
+  color: var(--approval-primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   BATCH LABEL
+   ========================================================= */
 
 .invoice-approval-batch-label {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 5px;
-  padding: 3px 7px;
-  border-radius: 4px;
-  background: #eaf1f9;
-  color: #234f7d;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
+  display: block;
+  margin-top: 5px;
+  color: var(--approval-teal-dark);
+  font-size: 9px;
+  font-weight: 750;
 }
+
+/* =========================================================
+   REQUEST TYPE
+   ========================================================= */
 
 .invoice-approval-type {
-  display: inline-block;
-  padding: 4px 8px;
-  border: 1px solid #dbe5f0;
-  border-radius: 5px;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 65px;
+  padding: 5px 9px;
+  color: #315e94;
+  background: #eaf2fc;
+  border: 1px solid #cbdcf0;
+  border-radius: 15px;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.35px;
 }
+
+/* =========================================================
+   REMARKS
+   ========================================================= */
 
 .invoice-approval-remarks {
-  max-width: 240px;
-  color: #64748b;
-  font-size: 12px;
-  overflow-wrap: anywhere;
+  max-width: 250px;
+  color: #52677d;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: normal;
 }
 
-.invoice-approval-table tbody td[colspan] {
-  padding: 32px 20px;
-  color: #64748b;
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.invoice-approvals-panel .invoice-empty-state {
+  padding: 35px 20px !important;
+  color: #738398 !important;
+  background: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 600;
   text-align: center;
 }
 
-@media (max-width: 900px) {
-  .invoice-approval-overview {
-    grid-template-columns: 1fr;
-    gap: 12px;
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .invoice-approvals-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 19px;
   }
 
-  .invoice-approval-stat {
-    padding: 15px 18px;
-  }
-
-  .invoice-approval-stat strong {
-    font-size: 23px;
-  }
-
-  .invoice-approvals-header h2 {
-    font-size: 20px;
-  }
-}
-
-@media (max-width: 600px) {
-  .invoice-approvals-panel {
-    margin-top: 20px;
+  .invoice-approvals-header button {
+    width: 100%;
   }
 
   .invoice-approval-toolbar {
     align-items: stretch;
+    flex-direction: column;
+    padding: 16px;
   }
 
-  .invoice-approval-search {
+  .invoice-approval-search-group {
     width: 100%;
-    min-width: 0;
   }
 
   .invoice-approval-section-header {
-    padding: 14px;
-  }
-
-  .invoice-approval-table {
-    min-width: 900px;
+    padding: 16px;
   }
 }
-.invoice-approval-search-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-  max-width: 420px;
+
+@media (max-width: 480px) {
+  .invoice-approvals-header h2,
+  .invoice-approvals-header h3 {
+    font-size: 17px;
+  }
+
+  .invoice-approval-section-header {
+    align-items: flex-start;
+  }
 }
 
-.invoice-approval-search-label {
-  color: #24364b;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-}
-
-.invoice-approval-search {
-  width: 100%;
-  max-width: 420px;
-  min-width: 0;
-  height: 44px;
-  padding: 0 14px;
-  box-sizing: border-box;
-  border: 1px solid #d7e0eb;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #24364b;
-  font-family: inherit;
-  font-size: 14px;
-  outline: none;
-  box-shadow: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.invoice-approval-search:focus {
-  border-color: #4779ad;
-  box-shadow: 0 0 0 3px rgba(71, 121, 173, 0.12);
-}
-
-.invoice-approval-search::placeholder {
-  color: #94a3b8;
+@media (prefers-reduced-motion: reduce) {
+  .invoice-approvals-panel *,
+  .invoice-approvals-panel *::before,
+  .invoice-approvals-panel *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

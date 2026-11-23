@@ -167,7 +167,9 @@ function formatDateTime(value?: string | null): string {
   });
 }
 
-function formatCurrency(value: string | number | null | undefined): string {
+function formatCurrency(
+  value: string | number | null | undefined,
+): string {
   return Number(value ?? 0).toLocaleString("en-IN", {
     style: "currency",
     currency: "INR",
@@ -206,14 +208,14 @@ export default function InvoicesPage({
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-  if (!success) return;
+    if (!success) return;
 
-  const timer = window.setTimeout(() => {
-    setSuccess("");
-  }, 6000);
+    const timer = window.setTimeout(() => {
+      setSuccess("");
+    }, 6000);
 
-  return () => window.clearTimeout(timer);
-}, [success]);
+    return () => window.clearTimeout(timer);
+  }, [success]);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<
@@ -613,7 +615,6 @@ export default function InvoicesPage({
         });
       } else {
         // New invoices go through IT Head approval.
-        // Do not set Content-Type manually for multipart FormData.
         const formData = new FormData();
 
         formData.append("payload_json", JSON.stringify(payload));
@@ -640,16 +641,16 @@ export default function InvoicesPage({
       }
 
       if (!isEditing) {
-  setSuccess(
-    "Invoice approval request sent to IT Head successfully. Your request is awaiting approval.",
-  );
+        setSuccess(
+          "Invoice approval request sent to IT Head successfully. Your request is awaiting approval.",
+        );
 
-  resetForm();
+        resetForm();
 
-  await loadApprovalRequests();
+        await loadApprovalRequests();
 
-  return;
-}
+        return;
+      }
 
       const savedInvoiceId = editingInvoiceId;
 
@@ -677,9 +678,9 @@ export default function InvoicesPage({
 
       resetForm();
 
-if (!documentUploadFailed) {
-  setSuccess("Invoice updated successfully.");
-}
+      if (!documentUploadFailed) {
+        setSuccess("Invoice updated successfully.");
+      }
 
       setLoading(true);
 
@@ -922,14 +923,17 @@ if (!documentUploadFailed) {
       .replace(/_/g, "-")}`;
   }
 
-  // Approval request search
+  // Show only pending approval requests.
   const filteredApprovalRequests = approvalRequests.filter((request) => {
+    if (request.status !== "PENDING") return false;
+
     const query = approvalSearch.trim().toLowerCase();
 
     if (!query) return true;
 
-    const requestOrder =
-      orders.find((order) => order.id === request.order_id);
+    const requestOrder = orders.find(
+      (order) => order.id === request.order_id,
+    );
 
     const invoiceMatches = (request.invoice_data ?? []).some(
       (invoice) =>
@@ -945,29 +949,17 @@ if (!documentUploadFailed) {
       (requestOrder?.order_number ?? "").toLowerCase().includes(query) ||
       (requestOrder?.party_name ?? "").toLowerCase().includes(query) ||
       (request.requested_by ?? "").toLowerCase().includes(query) ||
-      request.status.toLowerCase().includes(query) ||
       request.request_type.toLowerCase().includes(query) ||
       invoiceMatches
     );
   });
 
-  const pendingRequests = filteredApprovalRequests.filter(
-    (request) => request.status === "PENDING",
-  );
-
-  const approvedRequests = filteredApprovalRequests.filter(
-    (request) => request.status === "APPROVED",
-  );
-
-  const rejectedRequests = filteredApprovalRequests.filter(
-    (request) => request.status === "REJECTED",
-  );
+  const pendingRequests = filteredApprovalRequests;
 
   function renderApprovalTable(
     title: string,
     description: string,
     requests: ApprovalRequest[],
-    sectionStatus: "PENDING" | "APPROVED" | "REJECTED",
   ) {
     const invoiceRows = requests.flatMap((request) => {
       const requestInvoices =
@@ -990,9 +982,7 @@ if (!documentUploadFailed) {
             <p>{description}</p>
           </div>
 
-          <span
-            className={`invoice-approval-count invoice-approval-count-${sectionStatus.toLowerCase()}`}
-          >
+          <span className="invoice-approval-count invoice-approval-count-pending">
             {requests.length}
           </span>
         </div>
@@ -1010,25 +1000,22 @@ if (!documentUploadFailed) {
                 <th>Request Type</th>
                 <th>Submitted By</th>
                 <th>Submitted On</th>
-                <th>Decision Date</th>
-                <th>Status</th>
-                <th>Remarks</th>
               </tr>
             </thead>
 
             <tbody>
               {approvalLoading ? (
                 <tr>
-                  <td colSpan={12} className="invoice-empty-state">
+                  <td colSpan={9} className="invoice-empty-state">
                     Loading approval requests...
                   </td>
                 </tr>
               ) : invoiceRows.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="invoice-empty-state">
+                  <td colSpan={9} className="invoice-empty-state">
                     {approvalSearch.trim()
-                      ? "No approval requests match your search."
-                      : `No ${sectionStatus.toLowerCase()} requests found.`}
+                      ? "No pending approval requests match your search."
+                      : "No pending approval requests found."}
                   </td>
                 </tr>
               ) : (
@@ -1050,9 +1037,7 @@ if (!documentUploadFailed) {
                       </td>
 
                       <td>
-                        <strong>
-                          {invoice.invoice_number || "—"}
-                        </strong>
+                        <strong>{invoice.invoice_number || "—"}</strong>
 
                         {request.invoice_count > 1 && (
                           <small className="invoice-approval-batch-label">
@@ -1086,18 +1071,6 @@ if (!documentUploadFailed) {
                       <td>{request.requested_by || "—"}</td>
 
                       <td>{formatDateTime(request.requested_at)}</td>
-
-                      <td>{formatDateTime(request.decided_at)}</td>
-
-                      <td>
-                        <span className={statusClass(request.status)}>
-                          {request.status}
-                        </span>
-                      </td>
-
-                      <td className="invoice-approval-remarks">
-                        {request.remarks || "—"}
-                      </td>
                     </tr>
                   );
                 })
@@ -1126,7 +1099,7 @@ if (!documentUploadFailed) {
               ? editingInvoiceId !== null
                 ? `Update the invoice associated with order ${orderContext.order_number}.`
                 : `Submit an invoice linked to order ${orderContext.order_number} for IT Head approval.`
-              : "View invoice records, approval requests and vendor invoices."}
+              : "View pending approval requests and manage the official vendor invoice register."}
           </p>
         </div>
 
@@ -1239,9 +1212,7 @@ if (!documentUploadFailed) {
             </div>
 
             <div className="invoice-form-field">
-              <label htmlFor="invoice-party-name">
-                Vendor Name *
-              </label>
+              <label htmlFor="invoice-party-name">Vendor Name *</label>
 
               <input
                 id="invoice-party-name"
@@ -1454,15 +1425,14 @@ if (!documentUploadFailed) {
 
       {!orderContext && (
         <>
-          {/* Invoice approval workflow */}
+          {/* Pending invoice approval requests */}
           <div className="invoice-approvals-panel">
             <div className="invoice-approvals-header">
               <div>
                 <p className="eyebrow">WORKFLOW MANAGEMENT</p>
-                <h3>Invoice Approval Requests</h3>
+                <h3>Pending Approval Requests</h3>
                 <p>
-                  Track invoices submitted for IT Head review and monitor their
-                  approval decisions.
+                  Track invoices awaiting review and approval by the IT Head.
                 </p>
               </div>
 
@@ -1477,44 +1447,29 @@ if (!documentUploadFailed) {
             </div>
 
             <div className="invoice-approval-toolbar">
-  <div className="invoice-approval-search-group">
-    <label
-      htmlFor="approval-request-search"
-      className="invoice-approval-search-label"
-    >
-      Search Approval Requests
-    </label>
+              <div className="invoice-approval-search-group">
+                <label
+                  htmlFor="approval-request-search"
+                  className="invoice-approval-search-label"
+                >
+                  Search Pending Requests
+                </label>
 
-    <input
-      id="approval-request-search"
-      type="text"
-      className="invoice-approval-search"
-      placeholder="Search by request ID, invoice, vendor..."
-      value={approvalSearch}
-      onChange={(e) => setApprovalSearch(e.target.value)}
-    />
-  </div>
-</div>
+                <input
+                  id="approval-request-search"
+                  type="text"
+                  className="invoice-approval-search"
+                  placeholder="Search by request ID, invoice, vendor..."
+                  value={approvalSearch}
+                  onChange={(event) => setApprovalSearch(event.target.value)}
+                />
+              </div>
+            </div>
 
             {renderApprovalTable(
               "Pending Approval Requests",
               "Invoices awaiting an IT Head decision.",
               pendingRequests,
-              "PENDING",
-            )}
-
-            {renderApprovalTable(
-              "Approved Requests",
-              "Invoices approved and eligible for the official Invoice Register.",
-              approvedRequests,
-              "APPROVED",
-            )}
-
-            {renderApprovalTable(
-              "Rejected Requests",
-              "Requests rejected during the approval process.",
-              rejectedRequests,
-              "REJECTED",
             )}
           </div>
 

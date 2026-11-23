@@ -969,80 +969,100 @@ async function handleBulkImportConfirm() {
         </div>
       )}
 
-      <div className="order-invoices-summary">
-        <div>
-          <span>Order Number</span>
-          <strong>{order.order_number}</strong>
-        </div>
-        <div>
-          <span>Order Type</span>
-          <strong>{orderTypeLabel(order.order_type)}</strong>
-        </div>
-        <div>
-          <span>Order Date</span>
-          <strong>{formatDate(order.order_date)}</strong>
-        </div>
-        <div>
-          <span>Financial Year</span>
-          <strong>{order.financial_year || "—"}</strong>
-        </div>
-        <div>
-          <span>Vendor</span>
-          <strong>{order.party_name || `Party #${order.party_id}`}</strong>
-        </div>
-        <div>
-          <span>Budget</span>
-          <strong>{order.budget_name || "—"}</strong>
-        </div>
-        <div>
-          <span>Order Period</span>
-          <strong>{order.order_period || "—"}</strong>
-        </div>
-        <div>
-          <span>Location</span>
-          <strong>{order.location || "—"}</strong>
-        </div>
-        <div>
-          <span>Order Status</span>
-          <strong>{order.status}</strong>
-        </div>
-        <div>
-          <span>Description</span>
-          <strong>{order.description || "—"}</strong>
-        </div>
-      </div>
 
-      <div className="linked-invoice-metrics">
-        <div className="linked-invoice-metric">
-          <span>Total Order Amount</span>
-          <strong>{formatCurrency(order.amount)}</strong>
-        </div>
+<div className="order-overview-card">
+  <div className="order-overview-section-heading">
+    <div>
+      <h3>Order Overview</h3>
+      <p>Order information and current financial position</p>
+    </div>
+  </div>
 
-        <div className="linked-invoice-metric">
-          <span>Submitted Invoice Amount</span>
-          <strong>{formatCurrency(totalInvoiceAmount)}</strong>
-        </div>
+  <div className="order-invoices-summary">
+    <div>
+      <span>Order Number</span>
+      <strong>{order.order_number}</strong>
+    </div>
+    <div>
+      <span>Order Type</span>
+      <strong>{orderTypeLabel(order.order_type)}</strong>
+    </div>
+    <div>
+      <span>Order Date</span>
+      <strong>{formatDate(order.order_date)}</strong>
+    </div>
+    <div>
+      <span>Financial Year</span>
+      <strong>{order.financial_year || "—"}</strong>
+    </div>
+    <div>
+      <span>Vendor</span>
+      <strong>{order.party_name || `Party #${order.party_id}`}</strong>
+    </div>
+    <div>
+      <span>Budget</span>
+      <strong>{order.budget_name || "—"}</strong>
+    </div>
+    <div>
+      <span>Order Period</span>
+      <strong>{order.order_period || "—"}</strong>
+    </div>
+    <div>
+      <span>Location</span>
+      <strong>{order.location || "—"}</strong>
+    </div>
+    <div>
+      <span>Order Status</span>
+      <strong>{order.status}</strong>
+    </div>
+    <div className="order-overview-description">
+      <span>Description</span>
+      <strong>{order.description || "—"}</strong>
+    </div>
+  </div>
 
-        <div className="linked-invoice-metric">
-          <span>Paid Up to Date</span>
-          <strong>{formatCurrency(totalPaidToDate)}</strong>
-        </div>
+  <div className="order-overview-divider" />
 
-        <div className="linked-invoice-metric">
-          <span>Payment Due</span>
-          <strong>{formatCurrency(paymentDue)}</strong>
-        </div>
+  <div className="order-overview-section-heading financial-heading">
+    <div>
+      <h3>Financial Position</h3>
+      <p>Invoice commitments and outstanding order value</p>
+    </div>
+  </div>
 
-        <div className="linked-invoice-metric">
-          <span>Available Order Value</span>
-          <strong>{formatCurrency(availableOrderValue)}</strong>
-        </div>
+  <div className="linked-invoice-metrics">
+    <div className="linked-invoice-metric">
+      <span>Total Order Amount</span>
+      <strong>{formatCurrency(order.amount)}</strong>
+    </div>
 
-        <div className="linked-invoice-metric">
-          <span>Total Submitted Invoices</span>
-          <strong>{invoices.length}</strong>
-        </div>
-      </div>
+    <div className="linked-invoice-metric">
+      <span>Submitted Invoice Amount</span>
+      <strong>{formatCurrency(totalInvoiceAmount)}</strong>
+    </div>
+
+    <div className="linked-invoice-metric">
+      <span>Paid Up to Date</span>
+      <strong>{formatCurrency(totalPaidToDate)}</strong>
+    </div>
+
+    <div className="linked-invoice-metric">
+      <span>Payment Due</span>
+      <strong>{formatCurrency(paymentDue)}</strong>
+    </div>
+
+    <div className="linked-invoice-metric">
+      <span>Available Order Value</span>
+      <strong>{formatCurrency(availableOrderValue)}</strong>
+    </div>
+
+    <div className="linked-invoice-metric">
+      <span>Total Submitted Invoices</span>
+      <strong>{invoices.length}</strong>
+    </div>
+  </div>
+</div>
+
 
 
       <div className="order-invoices-heading">

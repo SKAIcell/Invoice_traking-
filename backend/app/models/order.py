@@ -59,6 +59,20 @@ class Order(Base):
         index=True,
     )
 
+    # OPEX subcategory allocation
+    budget_subcategory_id = Column(
+        Integer,
+        ForeignKey("budget_subcategories.id"),
+        nullable=True,
+        index=True,
+    )
+
+    # Order approver
+    approved_by = Column(
+        String(200),
+        nullable=True,
+    )
+
     financial_year = Column(String(9), nullable=False)
     order_date = Column(Date, nullable=False)
     order_period = Column(String(100), nullable=True)
@@ -94,5 +108,13 @@ class Order(Base):
     party = relationship("Party")
     budget = relationship("Budget")
 
+    budget_subcategory = relationship(
+        "BudgetSubcategory",
+        foreign_keys=[budget_subcategory_id],
+    )
+
     # Invoices linked to this order
-    invoices = relationship("Invoice", back_populates="order")
+    invoices = relationship(
+        "Invoice",
+        back_populates="order",
+    )
